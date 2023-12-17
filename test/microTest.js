@@ -167,48 +167,91 @@ describe("Contract Deployment", function () {
     
     });
 
-    const { ethers } = require("hardhat");
+    it("Should successfully call setMilestones() and return milestones data", async function () {
 
-    it("Should successfully call setMilestones()", async function () {
+      // Import the account using its private key
+      const privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+      const wallet = new ethers.Wallet(privateKey, ethers.provider);
+      const directGrantsSimpleStrategyWithSigner = directGrantsSimpleStrategy.connect(wallet);
 
-        // Import the account using its private key
-        const privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-        const wallet = new ethers.Wallet(privateKey, ethers.provider);
-        const directGrantsSimpleStrategyWithSigner = directGrantsSimpleStrategy.connect(wallet);
+      // Define the metadata structure as per your contract requirements
+      const metadata = {
+        protocol: 1,
+        pointer: ""
+      };
 
-        // Define the metadata structure as per your contract requirements
-        const metadata = {
-          protocol: 1,
-          pointer: ""
-        };
+      // Define milestones array
+      const milestones = [
+        {
+          amountPercentage: ethers.utils.parseUnits("0.5", "ether"), 
+          metadata: metadata,
+          milestoneStatus: 0
+        },
+        {
+          amountPercentage: ethers.utils.parseUnits("0.5", "ether"), 
+          metadata: metadata,
+          milestoneStatus: 0
+        }
+      ];
 
-        // Define milestones array
-        const milestones = [
-          {
-            amountPercentage: ethers.utils.parseUnits("0.5", "ether"), 
-            metadata: metadata,
-            milestoneStatus: 0
-          },
-          {
-            amountPercentage: ethers.utils.parseUnits("0.5", "ether"), 
-            metadata: metadata,
-            milestoneStatus: 0
-          }
-        ];
+      // Call the function with the specified account and milestones array
+      const setMilestonesTx = await directGrantsSimpleStrategyWithSigner.setMilestones(
+        testContract.address,
+        milestones,
+        { gasLimit: 3000000}
+      );
 
-        // Call the function with the specified account and milestones array
-        const setMilestonesTx = await directGrantsSimpleStrategyWithSigner.setMilestones(
-          testContract.address,
-          milestones,
-          { gasLimit: 3000000}
-        );
+      const setMilestonesTxResult = await setMilestonesTx.wait();
 
-        const setMilestonesTxResult = await setMilestonesTx.wait();
+      console.log("---- set Milestones Tx Result");
+      console.log(setMilestonesTxResult.events);
 
-        console.log("---- set Milestones Tx Result");
-        console.log(setMilestonesTxResult);
+
+      const getMilestonesTx = await directGrantsSimpleStrategyWithSigner.getMilestones(
+        testContract.address,
+        { gasLimit: 3000000}
+      );
+
+      console.log("---- GET Milestones");
+      console.log(getMilestonesTx);
     });
 
+    it("Should successfully call submitMilestone() and emit MilestoneSubmitted event", async function () {
+
+      // Import the account using its private key
+      const privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+      const wallet = new ethers.Wallet(privateKey, ethers.provider);
+      const directGrantsSimpleStrategyWithSigner = directGrantsSimpleStrategy.connect(wallet);
+
+      // Define the metadata structure as per your contract requirements
+      const metadata = {
+        protocol: 1,
+        pointer: ""
+      };
+
+      const submitMilestonesTx = await directGrantsSimpleStrategyWithSigner.submitMilestone(
+        testContract.address,
+        0,
+        metadata,
+        { gasLimit: 3000000}
+      );
+
+      const submitMilestonesTxResult = await submitMilestonesTx.wait();
+
+      console.log("---- submitMilestones Tx Result");
+      console.log(submitMilestonesTxResult);
+
+
+      const getMilestonesTx = await directGrantsSimpleStrategyWithSigner.getMilestones(
+        testContract.address,
+        { gasLimit: 3000000}
+      );
+
+      console.log("---- GET Milestones");
+      console.log(getMilestonesTx);
+
+
+    });
 
   });
 });  

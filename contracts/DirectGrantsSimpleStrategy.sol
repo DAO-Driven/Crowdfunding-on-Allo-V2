@@ -285,6 +285,7 @@ contract DirectGrantsSimpleStrategy is BaseStrategy, ReentrancyGuard {
     function submitMilestone(address _recipientId, uint256 _milestoneId, Metadata calldata _metadata) external {
         // Check if the '_recipientId' is the same as 'msg.sender' and if it is NOT, revert. This
         // also checks if the '_recipientId' is a member of the 'Profile' and if it is NOT, revert.
+
         if (_recipientId != msg.sender && !_isProfileMember(_recipientId, msg.sender)) {
             revert UNAUTHORIZED();
         }

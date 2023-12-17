@@ -415,8 +415,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/DirectGrantsSimpleStrategy.sol": {
-      "lastModificationDate": 1702756231514,
-      "contentHash": "bead051c0db705a45c5dc671e2595c69",
+      "lastModificationDate": 1702811796814,
+      "contentHash": "480e5bf53bf8d9225c1aa68fc7a9fc15",
       "sourceName": "contracts/DirectGrantsSimpleStrategy.sol",
       "solcConfig": {
         "version": "0.8.20",
