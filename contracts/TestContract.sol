@@ -20,6 +20,7 @@ interface IAlloV2 {
     function fundPool(uint256 _poolId, uint256 _amount) external payable;
     function registerRecipient(uint256 _poolId, bytes memory _data) external payable returns (address);
     function allocate(uint256 _poolId, bytes memory _data) external payable;
+    function distribute(uint256 _poolId, address[] memory _recipientIds, bytes memory _data) external;
 }
 
 
@@ -156,6 +157,14 @@ contract TestContract {
         );
 
         return allo.allocate(_poolId, encodedAllocateParams);
+    }
+
+    function distributeFundsToRecipient(uint256 _poolId, address[] memory _recipientIds)
+        external
+    {
+        bytes memory emptyData = "";
+
+        return allo.distribute(_poolId, _recipientIds, emptyData);
     }
     
     /// @notice This contract should be able to receive native token

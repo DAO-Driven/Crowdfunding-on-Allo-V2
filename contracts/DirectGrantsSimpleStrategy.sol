@@ -423,8 +423,8 @@ contract DirectGrantsSimpleStrategy is BaseStrategy, ReentrancyGuard {
             // Check if the registry anchor is valid so we know whether to use it or not
             isUsingRegistryAnchor = registryAnchor != address(0);
 
-            // Ternerary to set the recipient id based on whether or not we are using the 'registryAnchor' or '_sender'
-            recipientId = isUsingRegistryAnchor ? registryAnchor : _sender;
+            // Ternerary to set the recipient id based on whether or not we are using the 'registryAnchor' or 'recipientAddress'
+            recipientId = isUsingRegistryAnchor ? registryAnchor : recipientAddress;
             if (isUsingRegistryAnchor && !_isProfileMember(recipientId, _sender)) {
                 revert UNAUTHORIZED();
             }

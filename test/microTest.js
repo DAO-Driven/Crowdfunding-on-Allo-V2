@@ -7,7 +7,10 @@ describe("Contract Deployment", function () {
   let testContract, directGrantsSimpleStrategy;
   let deployer, profileId, poolId;
   let strategyName = "MicroGrants-Strategy";
-  let deployerPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"; // Account #0 Private Key
+  let deployerPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"; 
+
+  let testRecipientAddress = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
+  let testRecipientPrivateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 
   before(async function () {
     // Use the first account as the deployer
@@ -122,9 +125,9 @@ describe("Contract Deployment", function () {
 
       const tx = await testContract.registerRecipient(
         poolId,  // Assuming poolId is already defined and holds the correct value
-        "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",  // recipientAddress
+        testRecipientAddress,  // recipientAddress
         "0x0000000000000000000000000000000000000000",  // registryAnchor (dummy address for example)
-        ethers.utils.parseEther("0.2"),      // grantAmount
+        0,      // grantAmount
         metadata,  // metadata
         { gasLimit: 3000000}
       );
@@ -139,7 +142,7 @@ describe("Contract Deployment", function () {
     
       console.log("Recipient ID:", colors.white(recipientId));
 
-      const getRecipienttx = await directGrantsSimpleStrategy.getRecipient(testContract.address);
+      const getRecipienttx = await directGrantsSimpleStrategy.getRecipient(testRecipientAddress);
     
       console.log("---- Get NEW Recipient")
       console.log(getRecipienttx)
@@ -149,9 +152,9 @@ describe("Contract Deployment", function () {
     
       const tx = await testContract.allocateFundsToRecipient(
         poolId,
-        testContract.address,
+        testRecipientAddress,
         2,
-        0,
+        ethers.utils.parseEther("0.2"),
         { gasLimit: 3000000}
       );
 
@@ -160,7 +163,7 @@ describe("Contract Deployment", function () {
       console.log("---- txAllocate")
       console.log(txAllocate.events)
 
-      const getRecipientAfterAllocation = await directGrantsSimpleStrategy.getRecipient(testContract.address);
+      const getRecipientAfterAllocation = await directGrantsSimpleStrategy.getRecipient(testRecipientAddress);
     
       console.log("---- Get Recipient data after Allocation")
       console.log(getRecipientAfterAllocation)
@@ -196,31 +199,30 @@ describe("Contract Deployment", function () {
 
       // Call the function with the specified account and milestones array
       const setMilestonesTx = await directGrantsSimpleStrategyWithSigner.setMilestones(
-        testContract.address,
+        testRecipientAddress,
         milestones,
         { gasLimit: 3000000}
       );
 
       const setMilestonesTxResult = await setMilestonesTx.wait();
 
-      console.log("---- set Milestones Tx Result");
-      console.log(setMilestonesTxResult.events);
+      // console.log("---- set Milestones Tx Result");
+      // console.log(setMilestonesTxResult.events);
 
 
       const getMilestonesTx = await directGrantsSimpleStrategyWithSigner.getMilestones(
-        testContract.address,
+        testRecipientAddress,
         { gasLimit: 3000000}
       );
 
-      console.log("---- GET Milestones");
+      console.log(colors.white("---- GET Milestones"));
       console.log(getMilestonesTx);
     });
 
     it("Should successfully call submitMilestone() and emit MilestoneSubmitted event", async function () {
 
       // Import the account using its private key
-      const privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-      const wallet = new ethers.Wallet(privateKey, ethers.provider);
+      const wallet = new ethers.Wallet(testRecipientPrivateKey, ethers.provider);
       const directGrantsSimpleStrategyWithSigner = directGrantsSimpleStrategy.connect(wallet);
 
       // Define the metadata structure as per your contract requirements
@@ -230,7 +232,7 @@ describe("Contract Deployment", function () {
       };
 
       const submitMilestonesTx = await directGrantsSimpleStrategyWithSigner.submitMilestone(
-        testContract.address,
+        testRecipientAddress,
         0,
         metadata,
         { gasLimit: 3000000}
@@ -238,20 +240,42 @@ describe("Contract Deployment", function () {
 
       const submitMilestonesTxResult = await submitMilestonesTx.wait();
 
-      console.log("---- submitMilestones Tx Result");
-      console.log(submitMilestonesTxResult);
+      console.log(colors.white("---- submitMilestones Tx Result"));
+      console.log(submitMilestonesTxResult.events);
 
 
       const getMilestonesTx = await directGrantsSimpleStrategyWithSigner.getMilestones(
-        testContract.address,
+        testRecipientAddress,
         { gasLimit: 3000000}
       );
 
       console.log("---- GET Milestones");
       console.log(getMilestonesTx);
-
-
     });
 
+    it("Should successfully call distribute() of Allo and  emit Distributed eveent", async function () {
+
+      const testRecipientAddressBalanceBefore = await ethers.provider.getBalance(testRecipientAddress);
+
+      console.log(colors.white(`testRecipient Address Balance Before Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceBefore)} ETH`));
+    
+      const tx = await testContract.distributeFundsToRecipient(
+        poolId,
+        [testRecipientAddress],
+        { gasLimit: 3000000}
+      );
+  
+      const txDistribute = await tx.wait();
+  
+      console.log("---- txDistribute")
+      console.log(txDistribute.events)
+
+
+      const testRecipientAddressBalanceAfter = await ethers.provider.getBalance(testRecipientAddress);
+
+      console.log(colors.white(`testRecipient Address Balance Before Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceAfter)} ETH`));
+    
+    })
   });
+
 });  

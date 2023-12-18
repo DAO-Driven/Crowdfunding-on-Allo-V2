@@ -375,8 +375,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/TestContract.sol": {
-      "lastModificationDate": 1702738913361,
-      "contentHash": "b28ba7fb384929b9d4ffb6e6cc33f54c",
+      "lastModificationDate": 1702814034913,
+      "contentHash": "72ab83c7086c1f36768260a300d0e9ae",
       "sourceName": "contracts/TestContract.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -415,8 +415,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/DirectGrantsSimpleStrategy.sol": {
-      "lastModificationDate": 1702811796814,
-      "contentHash": "480e5bf53bf8d9225c1aa68fc7a9fc15",
+      "lastModificationDate": 1702815161733,
+      "contentHash": "088727549b2491d6e386e7e626b6bbcd",
       "sourceName": "contracts/DirectGrantsSimpleStrategy.sol",
       "solcConfig": {
         "version": "0.8.20",
