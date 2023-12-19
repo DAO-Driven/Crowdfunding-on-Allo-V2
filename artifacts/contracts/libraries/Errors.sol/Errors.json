@@ -136,6 +136,16 @@
     },
     {
       "inputs": [],
+      "name": "SUPPLY_IS_ALLOWED_ONLY_ONCE",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SUPPLY_NOT_FOUND",
+      "type": "error"
+    },
+    {
+      "inputs": [],
       "name": "UNAUTHORIZED",
       "type": "error"
     },
@@ -145,8 +155,8 @@
       "type": "error"
     }
   ],
-  "bytecode": "0x6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea2646970667358221220918eac365e585e82a551cfd0fb5edaf4ecb23f84bd896ee159ea3363864148e664736f6c63430008140033",
-  "deployedBytecode": "0x6080604052600080fdfea2646970667358221220918eac365e585e82a551cfd0fb5edaf4ecb23f84bd896ee159ea3363864148e664736f6c63430008140033",
+  "bytecode": "0x6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea26469706673582212201865adc97f492e59a4536f2c38c90e72c1d7fe95624114e27ca4050abab8ba6964736f6c63430008140033",
+  "deployedBytecode": "0x6080604052600080fdfea26469706673582212201865adc97f492e59a4536f2c38c90e72c1d7fe95624114e27ca4050abab8ba6964736f6c63430008140033",
   "linkReferences": {},
   "deployedLinkReferences": {}
 }

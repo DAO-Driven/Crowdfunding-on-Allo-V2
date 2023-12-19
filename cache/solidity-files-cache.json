@@ -81,8 +81,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/libraries/Errors.sol": {
-      "lastModificationDate": 1702577670516,
-      "contentHash": "40b0559d7dcaa795f2cbc1d9b86811cb",
+      "lastModificationDate": 1702979060844,
+      "contentHash": "59cdf4425703be175326687a8ff3c203",
       "sourceName": "contracts/libraries/Errors.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -374,49 +374,9 @@
         "ReentrancyGuard"
       ]
     },
-    "/Users/green/code/allo-v2-test/contracts/TestContract.sol": {
-      "lastModificationDate": 1702814034913,
-      "contentHash": "72ab83c7086c1f36768260a300d0e9ae",
-      "sourceName": "contracts/TestContract.sol",
-      "solcConfig": {
-        "version": "0.8.20",
-        "settings": {
-          "evmVersion": "paris",
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "./interfaces/IRegistry.sol",
-        "./DirectGrantsSimpleStrategy.sol"
-      ],
-      "versionPragmas": [
-        "^0.8.20"
-      ],
-      "artifacts": [
-        "IAlloV2",
-        "TestContract"
-      ]
-    },
     "/Users/green/code/allo-v2-test/contracts/DirectGrantsSimpleStrategy.sol": {
-      "lastModificationDate": 1702815161733,
-      "contentHash": "088727549b2491d6e386e7e626b6bbcd",
+      "lastModificationDate": 1702984759306,
+      "contentHash": "7c3771042c9bb02c5fa00ff99a426d53",
       "sourceName": "contracts/DirectGrantsSimpleStrategy.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -448,7 +408,8 @@
         "./interfaces/IAllo.sol",
         "./interfaces/IRegistry.sol",
         "./BaseStrategy.sol",
-        "./libraries/Metadata.sol"
+        "./libraries/Metadata.sol",
+        "./libraries/Helpers.sol"
       ],
       "versionPragmas": [
         "0.8.20"
@@ -491,6 +452,90 @@
       ],
       "artifacts": [
         "console"
+      ]
+    },
+    "/Users/green/code/allo-v2-test/contracts/Manager.sol": {
+      "lastModificationDate": 1702984598924,
+      "contentHash": "5c0039e950922971828089c1fe504fc8",
+      "sourceName": "contracts/Manager.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./interfaces/IRegistry.sol",
+        "@openzeppelin/contracts/utils/ReentrancyGuard.sol",
+        "./libraries/Errors.sol",
+        "./libraries/Transfer.sol",
+        "./libraries/Native.sol",
+        "./DirectGrantsSimpleStrategy.sol",
+        "./libraries/Helpers.sol",
+        "hardhat/console.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "Manager"
+      ]
+    },
+    "/Users/green/code/allo-v2-test/contracts/libraries/Helpers.sol": {
+      "lastModificationDate": 1702983400508,
+      "contentHash": "04d4a1b5bd5acf312f52d809e4770b56",
+      "sourceName": "contracts/libraries/Helpers.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Metadata.sol",
+        "../interfaces/IRegistry.sol"
+      ],
+      "versionPragmas": [
+        "0.8.20"
+      ],
+      "artifacts": [
+        "IAlloV2"
       ]
     }
   }

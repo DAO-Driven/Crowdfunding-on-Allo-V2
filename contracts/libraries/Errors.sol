@@ -116,4 +116,8 @@ contract Errors {
 
     /// @notice Thrown when the allocation is active.
     error ALLOCATION_ACTIVE();
+
+    error SUPPLY_IS_ALLOWED_ONLY_ONCE();
+
+    error SUPPLY_NOT_FOUND();
 }

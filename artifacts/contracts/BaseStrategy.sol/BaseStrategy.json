@@ -141,6 +141,16 @@
     },
     {
       "inputs": [],
+      "name": "SUPPLY_IS_ALLOWED_ONLY_ONCE",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SUPPLY_NOT_FOUND",
+      "type": "error"
+    },
+    {
+      "inputs": [],
       "name": "UNAUTHORIZED",
       "type": "error"
     },

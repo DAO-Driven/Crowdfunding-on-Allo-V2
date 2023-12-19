@@ -12,6 +12,8 @@ import {IRegistry} from "./interfaces/IRegistry.sol";
 import {BaseStrategy} from "./BaseStrategy.sol";
 // Internal Libraries
 import {Metadata} from "./libraries/Metadata.sol";
+import {SupplierPower} from "./libraries/Helpers.sol";
+
 
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣾⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣿⣿⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -60,6 +62,7 @@ contract DirectGrantsSimpleStrategy is BaseStrategy, ReentrancyGuard {
         bool registryGating;
         bool metadataRequired;
         bool grantAmountRequired;
+        SupplierPower[] validSupliers;
     }
 
     /// ===============================
@@ -120,6 +123,7 @@ contract DirectGrantsSimpleStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice This maps accepted recipients to their details
     /// @dev 'recipientId' to 'Recipient'
     mapping(address => Recipient) private _recipients;
+    mapping(address => uint256) private _suplierPower;
 
     /// @notice This maps accepted recipients to their milestones
     /// @dev 'recipientId' to 'Milestone'
@@ -164,6 +168,17 @@ contract DirectGrantsSimpleStrategy is BaseStrategy, ReentrancyGuard {
         registryGating = _initData.registryGating;
         metadataRequired = _initData.metadataRequired;
         grantAmountRequired = _initData.grantAmountRequired;
+
+        SupplierPower[] memory supliersPower =  _initData.validSupliers;
+
+        for (uint i = 0; i < supliersPower.length; i++) {
+
+            console.log("Strategy setting SUPLIER ID:", supliersPower[i].supplierId);
+            console.log("Strategy setting SUPLIER POWER:", supliersPower[i].supplierPowerr);
+
+            _suplierPower[supliersPower[i].supplierId] = supliersPower[i].supplierPowerr;
+        }
+
         _registry = allo.getRegistry();
 
         // Set the pool to active - this is required for the strategy to work and distribute funds
