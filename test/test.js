@@ -67,7 +67,7 @@ describe("Contract Deployment", function () {
         "Dev Profile 1", 
         [1, "test pointer"], 
         managerContract.address, 
-        [managerContract.address, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"]
+        testRecipientAddress
       );
 
       const txReceipt = await tx.wait();
@@ -149,17 +149,19 @@ describe("Contract Deployment", function () {
 
       const managerContractWithSigner = await managerContract.connect(supplier_5);
 
-      const tx = await managerContractWithSigner.supplyProject(profileId, supplyAmount, { value: supplyAmount });
-      await tx.wait();
+      const tx = await managerContractWithSigner.supplyProject(profileId, supplyAmount, {value: supplyAmount, gasLimit: 3000000});
+      const poolCreatedResult = await tx.wait();
+      const poolData = poolCreatedResult.events.pop().args
 
-      const projectSupply = await managerContract.getProjectSupply(profileId);
-      console.log(colors.white("================== projectSupply after last SUPPLY")) 
-      console.log(projectSupply);
+      poolId = poolData.poolId
+
+      console.log(colors.white("================== POOL ID:"), poolId);
+
     });
 
   })
 
-  // describe(colors.white("= DESCRIBE ================== New Pool Functionality =================="), function () {
+  describe(colors.white("= DESCRIBE ================== New Pool Functionality =================="), function () {
 
   //   it("Should successfully call createPoolForDirectGrants and return a POOL data", async function () {
 
@@ -197,7 +199,7 @@ describe("Contract Deployment", function () {
 
 
 
-  //   });
+  });
 
   //   it("Should successfully call registerRecipient and return a Recipient data", async function () {
 

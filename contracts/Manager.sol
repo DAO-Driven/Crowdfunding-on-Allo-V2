@@ -24,6 +24,7 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     bytes32[] private profiles;
     mapping(bytes32 => ProjectSupply) private pojectSupply;
     mapping(bytes32 => Suppliers) private suppliers;
+    mapping(bytes32 => address) private projectExecutor;
 
     /// ===============================
     /// ========== Events =============
@@ -51,11 +52,17 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         string memory _name,
         Metadata memory _metadata,
         address _owner,
-        address[] memory _members
+        address _recipient
     ) external returns (bytes32 profileId) {
-        profileId = registry.createProfile(_nonce, _name, _metadata, _owner, _members);
+
+        address[] memory members = new address[](2);
+        members[0] = _recipient;
+        members[1] = address(this);
+
+        profileId = registry.createProfile(_nonce, _name, _metadata, _owner, members);
         profiles.push(profileId);
         pojectSupply[profileId].need += _needs;
+        projectExecutor[profileId] = _recipient;
 
         return profileId;
     }
@@ -83,11 +90,13 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
                 supliersPower: validSupliers
             });
 
-            address[] memory managers = new address[](validSupliers.length);
+            address[] memory managers = new address[](validSupliers.length + 1);
 
             for (uint i = 0; i < validSupliers.length; i++) {
                 managers[i] = (validSupliers[i].supplierId);
             }
+
+            managers[validSupliers.length] = address(this);
 
             Metadata memory metadata = Metadata({
                 protocol: 1,
@@ -106,7 +115,18 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
                 managers
             );
 
-            console.log("======> NEW POOL:", pool);
+            require(address(this).balance >= pojectSupply[_projectId].need, "Insufficient balance in contract");
+
+            allo.fundPool{value: pojectSupply[_projectId].need}(pool, pojectSupply[_projectId].need);
+
+            bytes memory encodedRecipientParams = abi.encode(
+                projectExecutor[_projectId],
+                0x0000000000000000000000000000000000000000,
+                0,
+                metadata
+            );
+
+            allo.registerRecipient(pool, encodedRecipientParams);
 
             emit ProjectPoolCreeated( _projectId, pool);
         }
@@ -167,35 +187,6 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
     function getAlloRegistry() external view returns (IRegistry) {
         return allo.getRegistry();
-    }
-
-    function createPoolForDirectGrants(
-        bytes32 _profileId,
-        address _strategy,
-        address _token,
-        uint256 _amount,
-        Metadata memory _metadata,
-        address[] memory _managers
-    ) public payable returns (uint256) {
-        
-        // InitializeData memory initData = InitializeData({
-        //     registryGating: false,
-        //     metadataRequired: false,
-        //     grantAmountRequired: false
-        // });
-
-
-        // bytes memory encodedInitData = abi.encode(initData);
-
-        // return allo.createPoolWithCustomStrategy{value: msg.value}(
-        //     _profileId,
-        //     _strategy,
-        //     encodedInitData,
-        //     _token,
-        //     _amount,
-        //     _metadata,
-        //     _managers
-        // );
     }
 
     function supplyPool(uint256 _poolId, uint256 _amount) external payable {
