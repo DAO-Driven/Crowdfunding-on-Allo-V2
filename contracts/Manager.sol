@@ -104,6 +104,8 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
             });
 
             bytes memory encodedInitData = abi.encode(initData);
+            // uint256 poolAmount = pojectSupply[_projectId].need;
+
 
             uint256 pool = allo.createPoolWithCustomStrategy{value: msg.value}(
                 _projectId,

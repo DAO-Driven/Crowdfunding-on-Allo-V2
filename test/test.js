@@ -158,7 +158,7 @@ describe("Contract Deployment", function () {
     });
   })
 
-  describe(colors.white("= DESCRIBE ================== Milestones Functionality =================="), function () {
+  describe(colors.white("= DESCRIBE ================== Milestones Offer Functionality =================="), function () {
 
     it("Should successfully call offerMilestones() and return milestones data", async function () {
 
@@ -238,30 +238,30 @@ describe("Contract Deployment", function () {
 
   });
 
+  describe(colors.white("= DESCRIBE ================== Milestones Submissions Functionality =================="), function () {
 
-  
+    it("Should successfully call allocateFundsToRecipient() and emit allocated event", async function () {
     
-  //   it("Should successfully call allocateFundsToRecipient() and emit allocated event", async function () {
-    
-  //     const tx = await managerContract.allocateFundsToRecipient(
-  //       poolId,
-  //       testRecipientAddress,
-  //       2,
-  //       ethers.utils.parseEther("0.2"),
-  //       { gasLimit: 3000000}
-  //     );
+      const tx = await managerContract.allocateFundsToRecipient(
+        poolId,
+        testRecipientAddress,
+        2,
+        ethers.utils.parseEther("1"),
+        { gasLimit: 3000000}
+      );
 
-  //     const txAllocate = await tx.wait();
+      const txAllocate = await tx.wait();
 
-  //     console.log("---- txAllocate")
-  //     console.log(txAllocate.events)
+      console.log("---- txAllocate")
+      console.log(txAllocate)
 
-  //     const getRecipientAfterAllocation = await executorSupplierVotingStrategy.getRecipient(testRecipientAddress);
+      const getRecipientAfterAllocation = await executorSupplierVotingStrategy.getRecipient(testRecipientAddress);
     
-  //     console.log("---- Get Recipient data after Allocation")
-  //     console.log(getRecipientAfterAllocation)
+      console.log("---- Get Recipient data after Allocation")
+      console.log(getRecipientAfterAllocation)
     
-  //   });
+    });
+  });
 
    
 
