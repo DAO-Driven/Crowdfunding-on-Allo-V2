@@ -375,8 +375,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/DirectGrantsSimpleStrategy.sol": {
-      "lastModificationDate": 1702984759306,
-      "contentHash": "7c3771042c9bb02c5fa00ff99a426d53",
+      "lastModificationDate": 1703066032200,
+      "contentHash": "84f06e8316ca9ff239b1cdb014d75521",
       "sourceName": "contracts/DirectGrantsSimpleStrategy.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -455,8 +455,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/Manager.sol": {
-      "lastModificationDate": 1703000711503,
-      "contentHash": "8d3431a66dea3fdc489a672ce2ad4c85",
+      "lastModificationDate": 1703066080727,
+      "contentHash": "89af3188238eb3beb7c7af0c33733add",
       "sourceName": "contracts/Manager.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -488,7 +488,6 @@
         "./libraries/Errors.sol",
         "./libraries/Transfer.sol",
         "./libraries/Native.sol",
-        "./DirectGrantsSimpleStrategy.sol",
         "./libraries/Helpers.sol",
         "hardhat/console.sol"
       ],
@@ -500,8 +499,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/libraries/Helpers.sol": {
-      "lastModificationDate": 1702983400508,
-      "contentHash": "04d4a1b5bd5acf312f52d809e4770b56",
+      "lastModificationDate": 1703065959616,
+      "contentHash": "6a1c21b53ba8f89811ff1e2e8464a767",
       "sourceName": "contracts/libraries/Helpers.sol",
       "solcConfig": {
         "version": "0.8.20",

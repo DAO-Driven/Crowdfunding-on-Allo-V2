@@ -258,10 +258,30 @@ contract DirectGrantsSimpleStrategy is BaseStrategy, ReentrancyGuard {
 
         _setMilestones(_recipientId, _milestones);
 
-        if (isPoolManager) {
-            recipient.milestonesReviewStatus = Status.Accepted;
-            emit MilestonesReviewed(_recipientId, Status.Accepted);
+        // if (isPoolManager) {
+        //     recipient.milestonesReviewStatus = Status.Accepted;
+        //     emit MilestonesReviewed(_recipientId, Status.Accepted);
+        // }
+    }
+
+    function offerMilestones(address _recipientId, Milestone[] memory _milestones) external {
+        bool isRecipientCreator = (msg.sender == _recipientId) || _isProfileMember(_recipientId, msg.sender);
+        if (!isRecipientCreator) {
+            revert UNAUTHORIZED();
         }
+
+        Recipient storage recipient = _recipients[_recipientId];
+
+        // Check if the recipient is accepted, otherwise revert
+        if (recipient.recipientStatus != Status.Accepted) {
+            revert RECIPIENT_NOT_ACCEPTED();
+        }
+
+        if (recipient.milestonesReviewStatus == Status.Accepted) {
+            revert MILESTONES_ALREADY_SET();
+        }
+
+      
     }
 
     /// @notice Set milestones of the recipient
@@ -466,7 +486,7 @@ contract DirectGrantsSimpleStrategy is BaseStrategy, ReentrancyGuard {
             useRegistryAnchor: registryGating ? true : isUsingRegistryAnchor,
             grantAmount: grantAmount,
             metadata: metadata,
-            recipientStatus: Status.Pending,
+            recipientStatus: Status.Accepted,
             milestonesReviewStatus: Status.Pending
         });
 

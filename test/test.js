@@ -154,84 +154,63 @@ describe("Contract Deployment", function () {
       const poolData = poolCreatedResult.events.pop().args
 
       poolId = poolData.poolId
-
       console.log(colors.white("================== POOL ID:"), poolId);
-
     });
 
   })
 
   describe(colors.white("= DESCRIBE ================== New Pool Functionality =================="), function () {
 
-  //   it("Should successfully call createPoolForDirectGrants and return a POOL data", async function () {
+    it("Should successfully call setMilestones() and return milestones data", async function () {
 
-  //     const tx = await managerContract.createPoolForDirectGrants(
-  //       profileId,
-  //       directGrantsSimpleStrategy.address,
-  //       "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-  //       0,
-  //       [1, "test pointer"],
-  //       ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", managerContract.address],
-  //       {gasLimit: 3000000}
-  //     );
+      // Import the account using its private key
+      const privateKey = testRecipientPrivateKey;
+      const wallet = new ethers.Wallet(privateKey, ethers.provider);
+      const directGrantsSimpleStrategyWithSigner = directGrantsSimpleStrategy.connect(wallet);
 
-  //     const txReceipt = await tx.wait();
+      // Define the metadata structure as per your contract requirements
+      const metadata = {
+        protocol: 1,
+        pointer: ""
+      };
 
-  //     // poolId = txReceipt.events.pop().topics[1];
+      // Define milestones array
+      const milestones = [
+        {
+          amountPercentage: ethers.utils.parseUnits("0.5", "ether"), 
+          metadata: metadata,
+          milestoneStatus: 0
+        },
+        {
+          amountPercentage: ethers.utils.parseUnits("0.5", "ether"), 
+          metadata: metadata,
+          milestoneStatus: 0
+        }
+      ];
 
-  //     poolId = ethers.BigNumber.from(txReceipt.events.pop().topics[1]);
+      // Call the function with the specified account and milestones array
+      const setMilestonesTx = await directGrantsSimpleStrategyWithSigner.setMilestones(
+        testRecipientAddress,
+        milestones,
+        { gasLimit: 3000000}
+      );
 
-  //     console.log("Pool ID:", poolId);
+      const setMilestonesTxResult = await setMilestonesTx.wait();
 
-  //     const testContractBalance = await ethers.provider.getBalance(managerContract.address);
-  //     console.log(colors.white(`managerContract balance is ${ethers.utils.formatEther(testContractBalance)} ETH`));
-
-  //     const fundAmount = ethers.utils.parseEther("1"); // 1 ether, for example
-  //     const fundPoolTx = await managerContract.supplyPool(poolId, fundAmount);
-  //     await fundPoolTx.wait();
-
-  //     console.log(colors.white(" Pool Funding RESULT"))
-  //     console.log(fundPoolTx)
-    
-  //     // Check managerContract balance after funding the pool
-  //     const testContractBalanceAfter = await ethers.provider.getBalance(managerContract.address);
-  //     console.log(colors.white(`managerContract balance after funding is ${ethers.utils.formatEther(testContractBalanceAfter)} ETH`));
+      console.log("---- set Milestones Tx Result");
+      console.log(setMilestonesTxResult.events);
 
 
+      const getMilestonesTx = await directGrantsSimpleStrategyWithSigner.getMilestones(
+        testRecipientAddress,
+        { gasLimit: 3000000}
+      );
+
+      console.log(colors.white("---- GET Milestones"));
+      console.log(getMilestonesTx);
+    });
 
   });
-
-  //   it("Should successfully call registerRecipient and return a Recipient data", async function () {
-
-  //     const metadata = {
-  //       protocol: 1,
-  //       pointer: ""
-  //     };
-
-  //     const tx = await managerContract.registerRecipient(
-  //       poolId,  // Assuming poolId is already defined and holds the correct value
-  //       testRecipientAddress,  // recipientAddress
-  //       "0x0000000000000000000000000000000000000000",  // registryAnchor (dummy address for example)
-  //       0,      // grantAmount
-  //       metadata,  // metadata
-  //       { gasLimit: 3000000}
-  //     );
-    
-  //     const txReceipt = await tx.wait();
-
-  //     // console.log("---- Register Recipient")
-  //     // console.log(txReceipt.events)
-    
-  //     // Assuming the event's second topic contains the recipient ID
-  //     const recipientId = txReceipt.events.pop().topics[1];
-    
-  //     console.log("Recipient ID:", colors.white(recipientId));
-
-  //     const getRecipienttx = await directGrantsSimpleStrategy.getRecipient(testRecipientAddress);
-    
-  //     console.log("---- Get NEW Recipient")
-  //     console.log(getRecipienttx)
-  //   });
     
   //   it("Should successfully call allocateFundsToRecipient() and emit allocated event", async function () {
     
@@ -255,54 +234,7 @@ describe("Contract Deployment", function () {
     
   //   });
 
-  //   it("Should successfully call setMilestones() and return milestones data", async function () {
-
-  //     // Import the account using its private key
-  //     const privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-  //     const wallet = new ethers.Wallet(privateKey, ethers.provider);
-  //     const directGrantsSimpleStrategyWithSigner = directGrantsSimpleStrategy.connect(wallet);
-
-  //     // Define the metadata structure as per your contract requirements
-  //     const metadata = {
-  //       protocol: 1,
-  //       pointer: ""
-  //     };
-
-  //     // Define milestones array
-  //     const milestones = [
-  //       {
-  //         amountPercentage: ethers.utils.parseUnits("0.5", "ether"), 
-  //         metadata: metadata,
-  //         milestoneStatus: 0
-  //       },
-  //       {
-  //         amountPercentage: ethers.utils.parseUnits("0.5", "ether"), 
-  //         metadata: metadata,
-  //         milestoneStatus: 0
-  //       }
-  //     ];
-
-  //     // Call the function with the specified account and milestones array
-  //     const setMilestonesTx = await directGrantsSimpleStrategyWithSigner.setMilestones(
-  //       testRecipientAddress,
-  //       milestones,
-  //       { gasLimit: 3000000}
-  //     );
-
-  //     const setMilestonesTxResult = await setMilestonesTx.wait();
-
-  //     // console.log("---- set Milestones Tx Result");
-  //     // console.log(setMilestonesTxResult.events);
-
-
-  //     const getMilestonesTx = await directGrantsSimpleStrategyWithSigner.getMilestones(
-  //       testRecipientAddress,
-  //       { gasLimit: 3000000}
-  //     );
-
-  //     console.log(colors.white("---- GET Milestones"));
-  //     console.log(getMilestonesTx);
-  //   });
+   
 
   //   it("Should successfully call submitMilestone() and emit MilestoneSubmitted event", async function () {
 

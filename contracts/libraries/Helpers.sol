@@ -34,6 +34,11 @@ struct SupplierPower {
     uint256 supplierPowerr;
 }
 
+struct ActiveProjects {
+    bytes32 projectId;
+    uint256 poolId;
+}
+
 enum Status {
     None,
     Pending,

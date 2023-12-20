@@ -6,8 +6,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {Errors} from "./libraries/Errors.sol";
 import {Transfer} from "./libraries/Transfer.sol";
 import "./libraries/Native.sol";
-import { DirectGrantsSimpleStrategy } from "./DirectGrantsSimpleStrategy.sol";
-import {IAlloV2, InitializeData, NewRecipientParams, Status, ProjectSupply, Suppliers, SupplierPower} from "./libraries/Helpers.sol";
+import {IAlloV2, InitializeData, NewRecipientParams, Status, ProjectSupply, Suppliers, SupplierPower, ActiveProjects} from "./libraries/Helpers.sol";
 
 
 import "hardhat/console.sol";
@@ -21,7 +20,8 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     /// ========== Storage =============
     /// ================================
 
-    bytes32[] private profiles;
+    bytes32[] profiles;
+    ActiveProjects[] activeProjects;
     mapping(bytes32 => ProjectSupply) private pojectSupply;
     mapping(bytes32 => Suppliers) private suppliers;
     mapping(bytes32 => address) private projectExecutor;
@@ -128,6 +128,13 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
             allo.registerRecipient(pool, encodedRecipientParams);
 
+             ActiveProjects memory newActiveProject = ActiveProjects({
+                projectId: _projectId,
+                poolId: pool
+            });
+
+            activeProjects.push(newActiveProject);
+
             emit ProjectPoolCreeated( _projectId, pool);
         }
     }
@@ -175,7 +182,6 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         return validSuppliersPower;
     }
 
-    // Helper function to check if a project exists
     function _projectExists(bytes32 profileId) public view returns (bool) {
         IRegistry.Profile memory profile = registry.getProfileById(profileId);
         return profile.owner != address(0);
@@ -187,32 +193,6 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
     function getAlloRegistry() external view returns (IRegistry) {
         return allo.getRegistry();
-    }
-
-    function supplyPool(uint256 _poolId, uint256 _amount) external payable {
-        require(address(this).balance >= _amount, "Insufficient balance in contract");
-        return allo.fundPool{value: _amount}(_poolId, _amount);
-    }
-
-    function registerRecipient(
-        uint256 _poolId,
-        address _recipientAddress,
-        address _registryAnchor,
-        uint256 _grantAmount,
-        Metadata memory _metadata
-    )
-        external
-        returns (address recipientId)
-    {
-        
-        bytes memory encodedRecipientParams = abi.encode(
-            _recipientAddress,
-            _registryAnchor,
-            _grantAmount,
-            _metadata
-        );
-
-        return allo.registerRecipient(_poolId, encodedRecipientParams);
     }
 
     function allocateFundsToRecipient(
