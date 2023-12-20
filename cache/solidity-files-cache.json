@@ -374,50 +374,6 @@
         "ReentrancyGuard"
       ]
     },
-    "/Users/green/code/allo-v2-test/contracts/DirectGrantsSimpleStrategy.sol": {
-      "lastModificationDate": 1703066032200,
-      "contentHash": "84f06e8316ca9ff239b1cdb014d75521",
-      "sourceName": "contracts/DirectGrantsSimpleStrategy.sol",
-      "solcConfig": {
-        "version": "0.8.20",
-        "settings": {
-          "evmVersion": "paris",
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "hardhat/console.sol",
-        "@openzeppelin/contracts/utils/ReentrancyGuard.sol",
-        "./interfaces/IAllo.sol",
-        "./interfaces/IRegistry.sol",
-        "./BaseStrategy.sol",
-        "./libraries/Metadata.sol",
-        "./libraries/Helpers.sol"
-      ],
-      "versionPragmas": [
-        "0.8.20"
-      ],
-      "artifacts": [
-        "DirectGrantsSimpleStrategy"
-      ]
-    },
     "/Users/green/code/allo-v2-test/node_modules/hardhat/console.sol": {
       "lastModificationDate": 1702576353157,
       "contentHash": "896f68942c3a20e9ae3c3c5bfd3add54",
@@ -535,6 +491,50 @@
       ],
       "artifacts": [
         "IAlloV2"
+      ]
+    },
+    "/Users/green/code/allo-v2-test/contracts/ExecutorSupplierVotingStrategy.sol": {
+      "lastModificationDate": 1703068843417,
+      "contentHash": "1c600a8edb4a512e93f0b5281116141a",
+      "sourceName": "contracts/ExecutorSupplierVotingStrategy.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "hardhat/console.sol",
+        "@openzeppelin/contracts/utils/ReentrancyGuard.sol",
+        "./interfaces/IAllo.sol",
+        "./interfaces/IRegistry.sol",
+        "./BaseStrategy.sol",
+        "./libraries/Metadata.sol",
+        "./libraries/Helpers.sol"
+      ],
+      "versionPragmas": [
+        "0.8.20"
+      ],
+      "artifacts": [
+        "ExecutorSupplierVotingStrategy"
       ]
     }
   }

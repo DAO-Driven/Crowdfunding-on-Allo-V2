@@ -4,7 +4,7 @@ const colors = require('colors');
 
 
 describe("Contract Deployment", function () {
-  let managerContract, directGrantsSimpleStrategy;
+  let managerContract, executorSupplierVotingStrategy;
   let deployer, profileId, poolId;
   let strategyName = "Executor-Supplier-Voting";
   let deployerPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
@@ -15,13 +15,13 @@ describe("Contract Deployment", function () {
     // Use the first account as the deployer
     deployer = new ethers.Wallet(deployerPrivateKey, ethers.provider);
 
-    const DirectGrantsSimpleStrategy = await ethers.getContractFactory("DirectGrantsSimpleStrategy", deployer);
-    directGrantsSimpleStrategy = await DirectGrantsSimpleStrategy.deploy("0x1133eA7Af70876e64665ecD07C0A0476d09465a1", strategyName);
-    await directGrantsSimpleStrategy.deployed();
+    const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy", deployer);
+    executorSupplierVotingStrategy = await ExecutorSupplierVotingStrategy.deploy("0x1133eA7Af70876e64665ecD07C0A0476d09465a1", strategyName);
+    await executorSupplierVotingStrategy.deployed();
 
     const alloAddress = "0x1133eA7Af70876e64665ecD07C0A0476d09465a1";
     const ManagerContractInstance = await ethers.getContractFactory("Manager", deployer);
-    managerContract = await ManagerContractInstance.deploy(alloAddress, directGrantsSimpleStrategy.address);
+    managerContract = await ManagerContractInstance.deploy(alloAddress, executorSupplierVotingStrategy.address);
     await managerContract.deployed();
 
     const fundAmount = ethers.utils.parseEther("10"); // 1 ether, for example
@@ -37,9 +37,9 @@ describe("Contract Deployment", function () {
     console.log(colors.white(`managerContract balance is ${ethers.utils.formatEther(testContractBalance)} ETH`));
   });
 
-  it("Should deploy the DirectGrantsSimpleStrategy contract and return a valid address", async function () {
-    expect(ethers.utils.isAddress(directGrantsSimpleStrategy.address)).to.be.true;
-    console.log("DirectGrantsSimpleStrategy Deployed Address:", directGrantsSimpleStrategy.address);
+  it("Should deploy the ExecutorSupplierVotingStrategy contract and return a valid address", async function () {
+    expect(ethers.utils.isAddress(executorSupplierVotingStrategy.address)).to.be.true;
+    console.log("ExecutorSupplierVotingStrategy Deployed Address:", executorSupplierVotingStrategy.address);
   });
 
   it("Should deploy the managerContract and return a valid address", async function () {
@@ -166,7 +166,7 @@ describe("Contract Deployment", function () {
       // Import the account using its private key
       const privateKey = testRecipientPrivateKey;
       const wallet = new ethers.Wallet(privateKey, ethers.provider);
-      const directGrantsSimpleStrategyWithSigner = directGrantsSimpleStrategy.connect(wallet);
+      const executorSupplierVotingStrategyWithSigner = executorSupplierVotingStrategy.connect(wallet);
 
       // Define the metadata structure as per your contract requirements
       const metadata = {
@@ -179,17 +179,19 @@ describe("Contract Deployment", function () {
         {
           amountPercentage: ethers.utils.parseUnits("0.5", "ether"), 
           metadata: metadata,
-          milestoneStatus: 0
+          milestoneStatus: 0,
+          description: "i will do my best"
         },
         {
           amountPercentage: ethers.utils.parseUnits("0.5", "ether"), 
           metadata: metadata,
-          milestoneStatus: 0
+          milestoneStatus: 0,
+          description: "i will do my best"
         }
       ];
 
       // Call the function with the specified account and milestones array
-      const setMilestonesTx = await directGrantsSimpleStrategyWithSigner.setMilestones(
+      const setMilestonesTx = await executorSupplierVotingStrategyWithSigner.setMilestones(
         testRecipientAddress,
         milestones,
         { gasLimit: 3000000}
@@ -201,7 +203,7 @@ describe("Contract Deployment", function () {
       console.log(setMilestonesTxResult.events);
 
 
-      const getMilestonesTx = await directGrantsSimpleStrategyWithSigner.getMilestones(
+      const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getMilestones(
         testRecipientAddress,
         { gasLimit: 3000000}
       );
@@ -227,7 +229,7 @@ describe("Contract Deployment", function () {
   //     console.log("---- txAllocate")
   //     console.log(txAllocate.events)
 
-  //     const getRecipientAfterAllocation = await directGrantsSimpleStrategy.getRecipient(testRecipientAddress);
+  //     const getRecipientAfterAllocation = await executorSupplierVotingStrategy.getRecipient(testRecipientAddress);
     
   //     console.log("---- Get Recipient data after Allocation")
   //     console.log(getRecipientAfterAllocation)
@@ -240,7 +242,7 @@ describe("Contract Deployment", function () {
 
   //     // Import the account using its private key
   //     const wallet = new ethers.Wallet(testRecipientPrivateKey, ethers.provider);
-  //     const directGrantsSimpleStrategyWithSigner = directGrantsSimpleStrategy.connect(wallet);
+  //     const executorSupplierVotingStrategyWithSigner = executorSupplierVotingStrategy.connect(wallet);
 
   //     // Define the metadata structure as per your contract requirements
   //     const metadata = {
@@ -248,7 +250,7 @@ describe("Contract Deployment", function () {
   //       pointer: ""
   //     };
 
-  //     const submitMilestonesTx = await directGrantsSimpleStrategyWithSigner.submitMilestone(
+  //     const submitMilestonesTx = await executorSupplierVotingStrategyWithSigner.submitMilestone(
   //       testRecipientAddress,
   //       0,
   //       metadata,
@@ -261,7 +263,7 @@ describe("Contract Deployment", function () {
   //     console.log(submitMilestonesTxResult.events);
 
 
-  //     const getMilestonesTx = await directGrantsSimpleStrategyWithSigner.getMilestones(
+  //     const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getMilestones(
   //       testRecipientAddress,
   //       { gasLimit: 3000000}
   //     );
