@@ -11,6 +11,11 @@ describe("Contract Deployment", function () {
   let testRecipientAddress = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
   let testRecipientPrivateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 
+
+  const supplier_1 = new ethers.Wallet("0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a", ethers.provider);
+  const supplier_2 = new ethers.Wallet("0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba", ethers.provider);
+  const supplier_3 = new ethers.Wallet("0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e", ethers.provider);
+
   before(async function () {
     // Use the first account as the deployer
     deployer = new ethers.Wallet(deployerPrivateKey, ethers.provider);
@@ -49,12 +54,7 @@ describe("Contract Deployment", function () {
 
   describe("managerContract Functionality", function () {
 
-    const supplier_1 = new ethers.Wallet("0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a", ethers.provider);
-    const supplier_2 = new ethers.Wallet("0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba", ethers.provider);
-    const supplier_3 = new ethers.Wallet("0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e", ethers.provider);
-
     const accounts = [supplier_1, supplier_2, supplier_3];
-
 
     it("Should successfully call registerProject and return a profile data\n\n", async function () {
 
@@ -156,12 +156,11 @@ describe("Contract Deployment", function () {
       poolId = poolData.poolId
       console.log(colors.white("================== POOL ID:"), poolId);
     });
-
   })
 
-  describe(colors.white("= DESCRIBE ================== New Pool Functionality =================="), function () {
+  describe(colors.white("= DESCRIBE ================== Milestones Functionality =================="), function () {
 
-    it("Should successfully call setMilestones() and return milestones data", async function () {
+    it("Should successfully call offerMilestones() and return milestones data", async function () {
 
       // Import the account using its private key
       const privateKey = testRecipientPrivateKey;
@@ -191,7 +190,7 @@ describe("Contract Deployment", function () {
       ];
 
       // Call the function with the specified account and milestones array
-      const setMilestonesTx = await executorSupplierVotingStrategyWithSigner.setMilestones(
+      const setMilestonesTx = await executorSupplierVotingStrategyWithSigner.offerMilestones(
         testRecipientAddress,
         milestones,
         { gasLimit: 3000000}
@@ -199,20 +198,48 @@ describe("Contract Deployment", function () {
 
       const setMilestonesTxResult = await setMilestonesTx.wait();
 
-      console.log("---- set Milestones Tx Result");
-      console.log(setMilestonesTxResult.events);
+      // console.log("---- Offer Milestones Tx Result");
+      // console.log(setMilestonesTxResult.events);
 
+
+      const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getOffeeredMilestones(
+        testRecipientAddress,
+        { gasLimit: 3000000}
+      );
+
+      console.log(colors.white("---- GET Offered Milestones"));
+      console.log(getMilestonesTx);
+    });
+
+    it("Should successfully call reviewOfferedtMilestones() and return milestones data", async function () {  
+  
+      const milestonesReviewingaccounts = [supplier_1, supplier_2, supplier_3];
+  
+      for (const account of milestonesReviewingaccounts) {
+        // Connect the managerContract to the current account (signer)
+        const executorSupplierVotingStrategyWithSigner = executorSupplierVotingStrategy.connect(account);
+  
+        const tx = await executorSupplierVotingStrategyWithSigner.reviewOfferedtMilestones(testRecipientAddress, 2, { gasLimit: 3000000});
+        const reviewMilestoneTxResult = await tx.wait();
+        // console.log(colors.white("----> review Milestone Tx Result"));
+        // console.log(reviewMilestoneTxResult);
+      }
+
+      const executorSupplierVotingStrategyWithSigner = executorSupplierVotingStrategy.connect(supplier_1);
 
       const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getMilestones(
         testRecipientAddress,
         { gasLimit: 3000000}
       );
 
-      console.log(colors.white("---- GET Milestones"));
+      console.log(colors.white("---- GET Recipient Milestones"));
       console.log(getMilestonesTx);
     });
 
   });
+
+
+  
     
   //   it("Should successfully call allocateFundsToRecipient() and emit allocated event", async function () {
     

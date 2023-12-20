@@ -5,6 +5,8 @@ import "hardhat/console.sol";
 
 // External Libraries
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 // Intefaces
 import {IAllo} from "./interfaces/IAllo.sol";
 import {IRegistry} from "./interfaces/IRegistry.sol";
@@ -68,7 +70,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     struct OfferedMilestones {
         Milestone[] milestones;
-        Status milestonesStatus;
         uint256 votesFor;
         uint256 votesAgainst;
     }
@@ -96,8 +97,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Emitted for the registration of a recipient and the status is updated.
     event RecipientStatusChanged(address recipientId, Status status);
 
-    event MilestoneOffered(address recipientId, uint256 milestonesLength);
-
     /// @notice Emitted for the submission of a milestone.
     event MilestoneSubmitted(address recipientId, uint256 milestoneId, Metadata metadata);
 
@@ -107,6 +106,9 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Emitted for the milestones set.
     event MilestonesSet(address recipientId, uint256 milestonesLength);
     event MilestonesReviewed(address recipientId, Status status);
+    event MilestonesOffered(address recipientId, uint256 milestonesLength);
+    event OfferedMilestonesAccepted(address recipientId);
+    event OfferedMilestonesRejected(address recipientId);
 
     /// ================================
     /// ========== Storage =============
@@ -120,6 +122,9 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     /// @notice Flag to check if grant amount is required.
     bool public grantAmountRequired;
+
+    uint256 public totalSupply;
+    uint256 public thresholdPercentage = 70;
 
     /// @notice The 'Registry' contract interface.
     IRegistry private _registry;
@@ -183,11 +188,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         SupplierPower[] memory supliersPower =  _initData.validSupliers;
 
         for (uint i = 0; i < supliersPower.length; i++) {
-
-            console.log("Strategy setting SUPLIER ID:", supliersPower[i].supplierId);
-            console.log("Strategy setting SUPLIER POWER:", supliersPower[i].supplierPowerr);
-
             _suplierPower[supliersPower[i].supplierId] = supliersPower[i].supplierPowerr;
+            totalSupply += supliersPower[i].supplierPowerr;
         }
 
         _registry = allo.getRegistry();
@@ -206,6 +208,12 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @return Recipient Returns the recipient
     function getRecipient(address _recipientId) external view returns (Recipient memory) {
         return _getRecipient(_recipientId);
+    }
+
+    function setThresholdPercentage(uint256 _newPercentage, bytes32 _profileId) external {
+        require(_registry.isOwnerOfProfile(_profileId, msg.sender), "UNAUTHORIZED");
+        require(_newPercentage <= 100, "Invalid percentage");
+        thresholdPercentage = _newPercentage;
     }
 
     /// @notice Get recipient status
@@ -245,14 +253,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// ======= External/Custom =======
     /// ===============================
 
-    /// @notice Set milestones for recipient.
-    /// @dev 'msg.sender' must be recipient creator or pool manager. Emits a 'MilestonesReviewed()' event.
-    /// @param _recipientId ID of the recipient
-    /// @param _milestones The milestones to be set
-    function setMilestones(address _recipientId, Milestone[] memory _milestones) external {
+
+    function offerMilestones(address _recipientId, Milestone[] memory _milestones) external {
+        // Ensure the caller is authorized (either the recipient creator or profile member)
         bool isRecipientCreator = (msg.sender == _recipientId) || _isProfileMember(_recipientId, msg.sender);
-        bool isPoolManager = allo.isPoolManager(poolId, msg.sender);
-        if (!isRecipientCreator && !isPoolManager) {
+        if (!isRecipientCreator) {
             revert UNAUTHORIZED();
         }
 
@@ -263,82 +268,66 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             revert RECIPIENT_NOT_ACCEPTED();
         }
 
+        // Check if the milestones have already been reviewed and set, and if so, revert
         if (recipient.milestonesReviewStatus == Status.Accepted) {
             revert MILESTONES_ALREADY_SET();
         }
 
-        _setMilestones(_recipientId, _milestones);
+        _resetOfferedMilestones(_recipientId);
 
-        // if (isPoolManager) {
-        //     recipient.milestonesReviewStatus = Status.Accepted;
-        //     emit MilestonesReviewed(_recipientId, Status.Accepted);
-        // }
+        for (uint i = 0; i < _milestones.length; i++) {
+            offeredMilestones[_recipientId].milestones.push(_milestones[i]);
+        }
+
+        emit MilestonesOffered( _recipientId, _milestones.length);
     }
 
-    // function offerMilestones(address _recipientId, Milestone[] memory _milestones) external {
-    //     // Ensure the caller is authorized (either the recipient creator or profile member)
-    //     bool isRecipientCreator = (msg.sender == _recipientId) || _isProfileMember(_recipientId, msg.sender);
-    //     if (!isRecipientCreator) {
-    //         revert UNAUTHORIZED();
-    //     }
-
-    //     Recipient storage recipient = _recipients[_recipientId];
-
-    //     // Check if the recipient is accepted, otherwise revert
-    //     if (recipient.recipientStatus != Status.Accepted) {
-    //         revert RECIPIENT_NOT_ACCEPTED();
-    //     }
-
-    //     // Check if the milestones have already been reviewed and set, and if so, revert
-    //     if (recipient.milestonesReviewStatus == Status.Accepted) {
-    //         revert MILESTONES_ALREADY_SET();
-    //     }
-
-    //     // Reset the currently offered milestones for the recipient
-    //     delete offeredMilestones[_recipientId].milestones;
-
-    //     // Manually copy each milestone from the input array to the storage array
-    //     for (uint i = 0; i < _milestones.length; i++) {
-    //         offeredMilestones[_recipientId].milestones.push(_milestones[i]);
-    //     }
-
-    //     // Update the status of the offered milestones to 'Pending'
-    //     offeredMilestones[_recipientId].milestonesStatus = Status.Pending;
-
-    //     // Emit an event indicating that milestones have been offered for the recipient
-    //     emit MilestoneOffered(_recipientId, _milestones.length);
-    // }
+    function getOffeeredMilestones(address _recipientId) external view returns (Milestone[] memory) {
+        return offeredMilestones[_recipientId].milestones;
+    }
 
     function _resetOfferedMilestones(address _recipientId) internal {
-        offeredMilestones[_recipientId].milestones = new Milestone[](0);
-        offeredMilestones[_recipientId].milestonesStatus = Status.None;
-        offeredMilestones[_recipientId].votesFor = 0;
-        offeredMilestones[_recipientId].votesAgainst = 0;
-    }
+        delete offeredMilestones[_recipientId];
+    } 
 
     /// @notice Set milestones of the recipient
     /// @dev Emits a 'MilestonesReviewed()' event
     /// @param _recipientId ID of the recipient
     /// @param _status The status of the milestone review
-    function reviewSetMilestones(address _recipientId, Status _status) external onlyPoolManager(msg.sender) {
-        Recipient storage recipient = _recipients[_recipientId];
 
-        // Check if the recipient has any milestones, otherwise revert
-        if (milestones[_recipientId].length == 0) {
-            revert INVALID_MILESTONE();
-        }
+    function reviewOfferedtMilestones(address _recipientId, Status _status) external onlyPoolManager(msg.sender) {
+        
+        Recipient storage recipient = _recipients[_recipientId];
 
         // Check if the recipient is 'Accepted', otherwise revert
         if (recipient.milestonesReviewStatus == Status.Accepted) {
             revert MILESTONES_ALREADY_SET();
         }
 
-        // Check if the status is 'Accepted' or 'Rejected', otherwise revert
-        if (_status == Status.Accepted || _status == Status.Rejected) {
-            // Set the status of the milestone review
-            recipient.milestonesReviewStatus = _status;
+        uint256 managerVotingPower = _suplierPower[msg.sender];
+        uint256 threshold = totalSupply * thresholdPercentage / 100;
 
-            // Emit event for the milestone review
+        if (_status == Status.Accepted) {
+
+            offeredMilestones[_recipientId].votesFor += managerVotingPower;
+
+            if (offeredMilestones[_recipientId].votesFor > threshold) {
+                _recipients[_recipientId].milestonesReviewStatus = _status;
+                _setMilestones(_recipientId, offeredMilestones[_recipientId].milestones);
+                emit OfferedMilestonesAccepted(_recipientId);
+            }
+        }
+        else if (_status == Status.Rejected){
+
+            offeredMilestones[_recipientId].votesAgainst += managerVotingPower;
+
+            if (offeredMilestones[_recipientId].votesAgainst > threshold) {
+                _recipients[_recipientId].milestonesReviewStatus = _status;
+                _resetOfferedMilestones(_recipientId);
+                emit OfferedMilestonesRejected(_recipientId);
+            }
+        }
+        else{
             emit MilestonesReviewed(_recipientId, _status);
         }
     }
@@ -390,44 +379,47 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @dev 'msg.sender' must be a pool manager to reject a milestone. Emits a 'MilestonesStatusChanged()' event.
     /// @param _recipientId ID of the recipient
     /// @param _milestoneId ID of the milestone
-    function rejectMilestone(address _recipientId, uint256 _milestoneId) external onlyPoolManager(msg.sender) {
-        Milestone[] storage recipientMilestones = milestones[_recipientId];
 
-        // Check if the milestone is the upcoming one
-        if (_milestoneId > recipientMilestones.length) {
-            revert INVALID_MILESTONE();
-        }
 
-        Milestone storage milestone = recipientMilestones[_milestoneId];
+    // function rejectMilestone(address _recipientId, uint256 _milestoneId) external onlyPoolManager(msg.sender) {
+    //     Milestone[] storage recipientMilestones = milestones[_recipientId];
 
-        // Check if the milestone is NOT 'Accepted' already, and revert if it is
-        if (milestone.milestoneStatus == Status.Accepted) {
-            revert MILESTONE_ALREADY_ACCEPTED();
-        }
+    //     // Check if the milestone is the upcoming one
+    //     if (_milestoneId > recipientMilestones.length) {
+    //         revert INVALID_MILESTONE();
+    //     }
 
-        // Set the milestone status to 'Rejected'
-        milestone.milestoneStatus = Status.Rejected;
+    //     Milestone storage milestone = recipientMilestones[_milestoneId];
 
-        // Emit event for the milestone rejection
-        emit MilestoneStatusChanged(_recipientId, _milestoneId, Status.Rejected);
-    }
+    //     // Check if the milestone is NOT 'Accepted' already, and revert if it is
+    //     if (milestone.milestoneStatus == Status.Accepted) {
+    //         revert MILESTONE_ALREADY_ACCEPTED();
+    //     }
+
+    //     // Set the milestone status to 'Rejected'
+    //     milestone.milestoneStatus = Status.Rejected;
+
+    //     // Emit event for the milestone rejection
+    //     emit MilestoneStatusChanged(_recipientId, _milestoneId, Status.Rejected);
+    // }
 
     /// @notice Set the status of the recipient to 'InReview'
     /// @dev Emits a 'RecipientStatusChanged()' event
     /// @param _recipientIds IDs of the recipients
-    function setRecipientStatusToInReview(address[] calldata _recipientIds) external onlyPoolManager(msg.sender) {
-        uint256 recipientLength = _recipientIds.length;
-        for (uint256 i; i < recipientLength;) {
-            address recipientId = _recipientIds[i];
-            _recipients[recipientId].recipientStatus = Status.InReview;
 
-            emit RecipientStatusChanged(recipientId, Status.InReview);
+    // function setRecipientStatusToInReview(address[] calldata _recipientIds) external onlyPoolManager(msg.sender) {
+    //     uint256 recipientLength = _recipientIds.length;
+    //     for (uint256 i; i < recipientLength;) {
+    //         address recipientId = _recipientIds[i];
+    //         _recipients[recipientId].recipientStatus = Status.InReview;
 
-            unchecked {
-                i++;
-            }
-        }
-    }
+    //         emit RecipientStatusChanged(recipientId, Status.InReview);
+
+    //         unchecked {
+    //             i++;
+    //         }
+    //     }
+    // }
 
     /// @notice Toggle the status between active and inactive.
     /// @dev 'msg.sender' must be a pool manager to close the pool. Emits a 'PoolActive()' event.
@@ -440,13 +432,15 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Withdraw funds from pool.
     /// @dev 'msg.sender' must be a pool manager to withdraw funds.
     /// @param _amount The amount to be withdrawn
-    function withdraw(uint256 _amount) external onlyPoolManager(msg.sender) onlyInactivePool {
-        // Decrement the pool amount
-        poolAmount -= _amount;
 
-        // Transfer the amount to the pool manager
-        _transferAmount(allo.getPool(poolId).token, msg.sender, _amount);
-    }
+
+    // function withdraw(uint256 _amount) external onlyPoolManager(msg.sender) onlyInactivePool {
+    //     // Decrement the pool amount
+    //     poolAmount -= _amount;
+
+    //     // Transfer the amount to the pool manager
+    //     _transferAmount(allo.getPool(poolId).token, msg.sender, _amount);
+    // }
 
     /// ====================================
     /// ============ Internal ==============
@@ -652,6 +646,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     /// @notice Get the payout summary for the accepted recipient.
     /// @return Returns the payout summary for the accepted recipient
+
+    
     function _getPayout(address _recipientId, bytes memory) internal view override returns (PayoutSummary memory) {
         Recipient memory recipient = _getRecipient(_recipientId);
         return PayoutSummary(recipient.recipientAddress, recipient.grantAmount);

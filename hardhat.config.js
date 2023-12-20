@@ -12,5 +12,13 @@ module.exports = {
       url: "https://eth-goerli.g.alchemy.com/v2/k6px3XV2CMs2pZjXklvjGc8A0i-SujVf",
     },
   },
-  solidity: "0.8.20",
+  solidity: {
+    version: "0.8.20",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200 // Adjust 'runs' based on how often you expect to call the contract
+      }
+    }
+  }
 };
