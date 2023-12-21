@@ -533,8 +533,10 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         virtual
         override
         nonReentrant
-        onlyPoolManager(_sender)
+        // onlyPoolManager(_sender)
     {
+        require(_sender == address(this), "UNAUTHORIZED");
+        
         // Decode the '_data'
         (address recipientId, Status recipientStatus, uint256 grantAmount) =
             abi.decode(_data, (address, Status, uint256));
@@ -690,6 +692,14 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         if (totalAmountPercentage != 1e18) {
             revert INVALID_MILESTONE();
         }
+
+        bytes memory encodedAllocateParams = abi.encode(
+            _recipientId,
+            Status.Accepted,
+            totalSupply
+        );
+
+        allo.allocate(poolId, encodedAllocateParams);
 
         emit MilestonesSet(_recipientId, milestonesLength);
     }

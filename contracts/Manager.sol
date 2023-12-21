@@ -104,7 +104,7 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
             });
 
             bytes memory encodedInitData = abi.encode(initData);
-            // uint256 poolAmount = pojectSupply[_projectId].need;
+            uint256 grantAmount = pojectSupply[_projectId].need;
 
 
             uint256 pool = allo.createPoolWithCustomStrategy{value: msg.value}(
@@ -124,7 +124,7 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
             bytes memory encodedRecipientParams = abi.encode(
                 projectExecutor[_projectId],
                 0x0000000000000000000000000000000000000000,
-                0,
+                grantAmount,
                 metadata
             );
 

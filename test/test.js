@@ -235,25 +235,27 @@ describe("Contract Deployment", function () {
       console.log(colors.white("---- GET Recipient Milestones"));
       console.log(getMilestonesTx);
     });
-
   });
 
   describe(colors.white("= DESCRIBE ================== Milestones Submissions Functionality =================="), function () {
 
     it("Should successfully call allocateFundsToRecipient() and emit allocated event", async function () {
     
-      const tx = await managerContract.allocateFundsToRecipient(
-        poolId,
-        testRecipientAddress,
-        2,
-        ethers.utils.parseEther("1"),
-        { gasLimit: 3000000}
-      );
+      // OLD LOGIC! .... Currently, the funds are being allocated by the strategy in the _setMilestones function/method.
+      // At the moment this block is only to see recipient data
 
-      const txAllocate = await tx.wait();
+      // const tx = await managerContract.allocateFundsToRecipient(
+      //   poolId,
+      //   testRecipientAddress,
+      //   2,
+      //   ethers.utils.parseEther("1"),
+      //   { gasLimit: 3000000}
+      // );
 
-      console.log("---- txAllocate")
-      console.log(txAllocate)
+      // const txAllocate = await tx.wait();
+
+      // console.log("---- txAllocate")
+      // console.log(txAllocate)
 
       const getRecipientAfterAllocation = await executorSupplierVotingStrategy.getRecipient(testRecipientAddress);
     
@@ -261,6 +263,9 @@ describe("Contract Deployment", function () {
       console.log(getRecipientAfterAllocation)
     
     });
+
+
+
   });
 
    
