@@ -494,8 +494,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/ExecutorSupplierVotingStrategy.sol": {
-      "lastModificationDate": 1703099904684,
-      "contentHash": "d8499bb8f97a6999dea86e7a7c46e3a8",
+      "lastModificationDate": 1703161574694,
+      "contentHash": "1f7c365edf10c907509099000be4b6c7",
       "sourceName": "contracts/ExecutorSupplierVotingStrategy.sol",
       "solcConfig": {
         "version": "0.8.20",

@@ -239,7 +239,7 @@ describe("Contract Deployment", function () {
 
   describe(colors.white("= DESCRIBE ================== Milestones Submissions Functionality =================="), function () {
 
-    it("Should successfully call allocateFundsToRecipient() and emit allocated event", async function () {
+    it("Should successfully get test recipient and show its data ", async function () {
     
       // OLD LOGIC! .... Currently, the funds are being allocated by the strategy in the _setMilestones function/method.
       // At the moment this block is only to see recipient data
@@ -264,45 +264,40 @@ describe("Contract Deployment", function () {
     
     });
 
+    it("Should successfully call submitMilestone() and emit MilestoneSubmitted event", async function () {
+
+      const wallet = new ethers.Wallet(testRecipientPrivateKey, ethers.provider);
+      const executorSupplierVotingStrategyWithSigner = executorSupplierVotingStrategy.connect(wallet);
+
+      const metadata = {
+        protocol: 1,
+        pointer: ""
+      };
+
+      const submitMilestonesTx = await executorSupplierVotingStrategyWithSigner.submitMilestone(
+        testRecipientAddress,
+        0,
+        metadata,
+        { gasLimit: 3000000}
+      );
+
+      const submitMilestonesTxResult = await submitMilestonesTx.wait();
+      // console.log(colors.white("---- submitMilestones Tx Result"));
+      // console.log(submitMilestonesTxResult.events);
+
+      const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getMilestones(
+        testRecipientAddress,
+        { gasLimit: 3000000}
+      );
+
+      console.log(colors.white("=======> testRecipient's milestones:"));
+      console.log(getMilestonesTx);
+    });
 
 
   });
 
-   
-
-  //   it("Should successfully call submitMilestone() and emit MilestoneSubmitted event", async function () {
-
-  //     // Import the account using its private key
-  //     const wallet = new ethers.Wallet(testRecipientPrivateKey, ethers.provider);
-  //     const executorSupplierVotingStrategyWithSigner = executorSupplierVotingStrategy.connect(wallet);
-
-  //     // Define the metadata structure as per your contract requirements
-  //     const metadata = {
-  //       protocol: 1,
-  //       pointer: ""
-  //     };
-
-  //     const submitMilestonesTx = await executorSupplierVotingStrategyWithSigner.submitMilestone(
-  //       testRecipientAddress,
-  //       0,
-  //       metadata,
-  //       { gasLimit: 3000000}
-  //     );
-
-  //     const submitMilestonesTxResult = await submitMilestonesTx.wait();
-
-  //     console.log(colors.white("---- submitMilestones Tx Result"));
-  //     console.log(submitMilestonesTxResult.events);
-
-
-  //     const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getMilestones(
-  //       testRecipientAddress,
-  //       { gasLimit: 3000000}
-  //     );
-
-  //     console.log("---- GET Milestones");
-  //     console.log(getMilestonesTx);
-  //   });
+  
 
   //   it("Should successfully call distribute() of Allo and  emit Distributed eveent", async function () {
 
