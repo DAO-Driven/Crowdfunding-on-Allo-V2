@@ -120,4 +120,6 @@ contract Errors {
     error SUPPLY_IS_ALLOWED_ONLY_ONCE();
 
     error SUPPLY_NOT_FOUND();
+
+    error INVALID_MILESTONE_STATUS();
 }

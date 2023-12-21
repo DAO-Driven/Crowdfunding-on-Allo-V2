@@ -74,6 +74,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         uint256 votesAgainst;
     }
 
+    struct SubmiteddMilestone {
+        uint256 votesFor;
+        uint256 votesAgainst;
+    }
+
     /// ===============================
     /// ========== Errors =============
     /// ===============================
@@ -99,6 +104,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     /// @notice Emitted for the submission of a milestone.
     event MilestoneSubmitted(address recipientId, uint256 milestoneId, Metadata metadata);
+    event SubmittedvMilestoneReviewed(address recipientId, uint256 milestoneId, Status status);
 
     /// @notice Emitted for the status change of a milestone.
     event MilestoneStatusChanged(address recipientId, uint256 milestoneId, Status status);
@@ -148,6 +154,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice This maps accepted recipients to their upcoming milestone
     /// @dev 'recipientId' to 'nextMilestone'
     mapping(address => uint256) public upcomingMilestone;
+    mapping(uint256 => SubmiteddMilestone) public submittedvMilestones;
 
     /// ===============================
     /// ======== Constructor ==========
@@ -297,9 +304,10 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     function reviewOfferedtMilestones(address _recipientId, Status _status) external onlyPoolManager(msg.sender) {
         
+        // TODO: check if msg.sender already reviewed 
+
         Recipient storage recipient = _recipients[_recipientId];
 
-        // Check if the recipient is 'Accepted', otherwise revert
         if (recipient.milestonesReviewStatus == Status.Accepted) {
             revert MILESTONES_ALREADY_SET();
         }
@@ -327,9 +335,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
                 emit OfferedMilestonesRejected(_recipientId);
             }
         }
-        else{
-            emit MilestonesReviewed(_recipientId, _status);
-        }
+
+        emit MilestonesReviewed(_recipientId, _status);
     }
 
     /// @notice Submit milestone by the recipient.
@@ -375,51 +382,60 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         emit MilestoneSubmitted(_recipientId, _milestoneId, _metadata);
     }
 
-    /// @notice Reject pending milestone of the recipient.
-    /// @dev 'msg.sender' must be a pool manager to reject a milestone. Emits a 'MilestonesStatusChanged()' event.
-    /// @param _recipientId ID of the recipient
-    /// @param _milestoneId ID of the milestone
+    function reviewSubmitedMilestone(address _recipientId, uint256 _milestoneId, Status _status) external onlyPoolManager(msg.sender){
 
+        // TODO: check if msg.sender already reviewed 
 
-    // function rejectMilestone(address _recipientId, uint256 _milestoneId) external onlyPoolManager(msg.sender) {
-    //     Milestone[] storage recipientMilestones = milestones[_recipientId];
+        Recipient memory recipient = _recipients[_recipientId];
 
-    //     // Check if the milestone is the upcoming one
-    //     if (_milestoneId > recipientMilestones.length) {
-    //         revert INVALID_MILESTONE();
-    //     }
+        if (recipient.recipientStatus != Status.Accepted) {
+            revert RECIPIENT_NOT_ACCEPTED();
+        }
 
-    //     Milestone storage milestone = recipientMilestones[_milestoneId];
+        Milestone[] storage recipientMilestones = milestones[_recipientId];
 
-    //     // Check if the milestone is NOT 'Accepted' already, and revert if it is
-    //     if (milestone.milestoneStatus == Status.Accepted) {
-    //         revert MILESTONE_ALREADY_ACCEPTED();
-    //     }
+        if (_milestoneId > recipientMilestones.length) {
+            revert INVALID_MILESTONE();
+        }
 
-    //     // Set the milestone status to 'Rejected'
-    //     milestone.milestoneStatus = Status.Rejected;
+        Milestone storage milestone = recipientMilestones[_milestoneId];
 
-    //     // Emit event for the milestone rejection
-    //     emit MilestoneStatusChanged(_recipientId, _milestoneId, Status.Rejected);
-    // }
+        if (milestone.milestoneStatus != Status.Pending) {
+            revert INVALID_MILESTONE_STATUS();
+        }
 
-    /// @notice Set the status of the recipient to 'InReview'
-    /// @dev Emits a 'RecipientStatusChanged()' event
-    /// @param _recipientIds IDs of the recipients
+        uint256 managerVotingPower = _suplierPower[msg.sender];
+        uint256 threshold = totalSupply * thresholdPercentage / 100;
 
-    // function setRecipientStatusToInReview(address[] calldata _recipientIds) external onlyPoolManager(msg.sender) {
-    //     uint256 recipientLength = _recipientIds.length;
-    //     for (uint256 i; i < recipientLength;) {
-    //         address recipientId = _recipientIds[i];
-    //         _recipients[recipientId].recipientStatus = Status.InReview;
+        if (_status == Status.Accepted) {
 
-    //         emit RecipientStatusChanged(recipientId, Status.InReview);
+            submittedvMilestones[_milestoneId].votesFor += managerVotingPower;
+            
+            if (submittedvMilestones[_milestoneId].votesFor > threshold) { 
+                milestone.milestoneStatus = _status;
 
-    //         unchecked {
-    //             i++;
-    //         }
-    //     }
-    // }
+                address[] memory recipientIds = new address[](1);
+                recipientIds[0] = _recipientId;
+
+                allo.distribute(poolId, recipientIds, "");
+
+                emit MilestoneStatusChanged(_recipientId, _milestoneId, _status);
+            }
+        }
+        else if (_status == Status.Rejected){
+
+            submittedvMilestones[_milestoneId].votesAgainst += managerVotingPower;
+            
+            if (submittedvMilestones[_milestoneId].votesAgainst > threshold) { 
+                milestone.milestoneStatus = _status;
+
+                delete submittedvMilestones[_milestoneId];
+                emit MilestoneStatusChanged(_recipientId, _milestoneId, _status);
+            }
+        }
+            
+        emit SubmittedvMilestoneReviewed(_recipientId, _milestoneId, _status);
+    }
 
     /// @notice Toggle the status between active and inactive.
     /// @dev 'msg.sender' must be a pool manager to close the pool. Emits a 'PoolActive()' event.
@@ -535,7 +551,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         nonReentrant
         // onlyPoolManager(_sender)
     {
-        require(_sender == address(this), "UNAUTHORIZED");
+        require(_sender == address(this), "UNAUTHORIZED allocate");
         
         // Decode the '_data'
         (address recipientId, Status recipientStatus, uint256 grantAmount) =
@@ -583,8 +599,9 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         internal
         virtual
         override
-        onlyPoolManager(_sender)
     {
+        require(_sender == address(this), "UNAUTHORIZED distribute");
+
         uint256 recipientLength = _recipientIds.length;
         for (uint256 i; i < recipientLength;) {
             _distributeUpcomingMilestone(_recipientIds[i], _sender);
@@ -606,8 +623,12 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         Milestone storage milestone = recipientMilestones[milestoneToBeDistributed];
 
         // check if milestone is not rejected or already paid out
-        if (milestoneToBeDistributed > recipientMilestones.length || milestone.milestoneStatus != Status.Pending) {
+        if (milestoneToBeDistributed > recipientMilestones.length) {
             revert INVALID_MILESTONE();
+        }
+
+        if (milestone.milestoneStatus != Status.Accepted) {
+            revert INVALID_MILESTONE_STATUS();
         }
 
         // Calculate the amount to be distributed for the milestone
@@ -619,14 +640,10 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         poolAmount -= amount;
         _transferAmount(pool.token, recipient.recipientAddress, amount);
 
-        // Set the milestone status to 'Accepted'
-        milestone.milestoneStatus = Status.Accepted;
-
         // Increment the upcoming milestone
         upcomingMilestone[_recipientId]++;
 
-        // Emit events for the milestone and the distribution
-        emit MilestoneStatusChanged(_recipientId, milestoneToBeDistributed, Status.Accepted);
+        // Emit events for the distribution
         emit Distributed(_recipientId, recipient.recipientAddress, amount, _sender);
     }
 

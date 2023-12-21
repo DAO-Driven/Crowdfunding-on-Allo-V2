@@ -294,34 +294,34 @@ describe("Contract Deployment", function () {
       console.log(getMilestonesTx);
     });
 
+    it("Should successfully call reviewSubmitedMilestone() by all suppliers and distribut accepted milestone", async function () {
 
+
+      const testRecipientAddressBalanceBefore = await ethers.provider.getBalance(testRecipientAddress);
+
+      console.log(colors.white(`testRecipient Address Balance Before Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceBefore)} ETH`));
+
+      const milestoneReviewingaccounts = [supplier_1, supplier_2, supplier_3];
+  
+      for (const account of milestoneReviewingaccounts) {
+
+        const executorSupplierVotingStrategyWithSigner = executorSupplierVotingStrategy.connect(account);
+  
+        const tx = await executorSupplierVotingStrategyWithSigner.reviewSubmitedMilestone(
+          testRecipientAddress, 
+          0,
+          2, 
+          { gasLimit: 3000000}
+        );
+
+        const reviewMilestoneTxResult = await tx.wait();
+        // console.log(colors.white("----> review Milestone Tx Result"));
+        // console.log(reviewMilestoneTxResult.events);
+      }
+
+      const testRecipientAddressBalanceAfter = await ethers.provider.getBalance(testRecipientAddress);
+
+      console.log(colors.white(`testRecipient Address Balance Before Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceAfter)} ETH`));
+    })
   });
-
-  
-
-  //   it("Should successfully call distribute() of Allo and  emit Distributed eveent", async function () {
-
-  //     const testRecipientAddressBalanceBefore = await ethers.provider.getBalance(testRecipientAddress);
-
-  //     console.log(colors.white(`testRecipient Address Balance Before Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceBefore)} ETH`));
-    
-  //     const tx = await managerContract.distributeFundsToRecipient(
-  //       poolId,
-  //       [testRecipientAddress],
-  //       { gasLimit: 3000000}
-  //     );
-  
-  //     const txDistribute = await tx.wait();
-  
-  //     console.log("---- txDistribute")
-  //     console.log(txDistribute.events)
-
-
-  //     const testRecipientAddressBalanceAfter = await ethers.provider.getBalance(testRecipientAddress);
-
-  //     console.log(colors.white(`testRecipient Address Balance Before Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceAfter)} ETH`));
-    
-  //   })
-  // });
-
 });  

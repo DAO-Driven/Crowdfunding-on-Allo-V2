@@ -60,6 +60,11 @@
     },
     {
       "inputs": [],
+      "name": "INVALID_MILESTONE_STATUS",
+      "type": "error"
+    },
+    {
+      "inputs": [],
       "name": "INVALID_REGISTRATION",
       "type": "error"
     },
