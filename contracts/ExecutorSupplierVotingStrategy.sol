@@ -2,11 +2,9 @@
 pragma solidity 0.8.20;
 
 import "hardhat/console.sol";
-
 // External Libraries
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
 // Intefaces
 import {IAllo} from "./interfaces/IAllo.sol";
 import {IRegistry} from "./interfaces/IRegistry.sol";
@@ -223,23 +221,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         thresholdPercentage = _newPercentage;
     }
 
-    /// @notice Get recipient status
-    /// @dev The global 'Status' is used at the protocol level and most strategies will use this.
-    ///      todo: finish this
-    /// @param _recipientId ID of the recipient
-    /// @return Status Returns the global recipient status
-    function _getRecipientStatus(address _recipientId) internal view override returns (Status) {
-        return _getRecipient(_recipientId).recipientStatus;
-    }
-
-    /// @notice Checks if address is eligible allocator.
-    /// @dev This is used to check if the allocator is a pool manager and able to allocate funds from the pool
-    /// @param _allocator Address of the allocator
-    /// @return 'true' if the allocator is a pool manager, otherwise false
-    function _isValidAllocator(address _allocator) internal view override returns (bool) {
-        return allo.isPoolManager(poolId, _allocator);
-    }
-
     /// @notice Get the status of the milestone of an recipient.
     /// @dev This is used to check the status of the milestone of an recipient and is strategy specific
     /// @param _recipientId ID of the recipient
@@ -292,10 +273,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     function getOffeeredMilestones(address _recipientId) external view returns (Milestone[] memory) {
         return offeredMilestones[_recipientId].milestones;
     }
-
-    function _resetOfferedMilestones(address _recipientId) internal {
-        delete offeredMilestones[_recipientId];
-    } 
 
     /// @notice Set milestones of the recipient
     /// @dev Emits a 'MilestonesReviewed()' event
@@ -458,9 +435,33 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     //     _transferAmount(allo.getPool(poolId).token, msg.sender, _amount);
     // }
 
+
+
+
     /// ====================================
     /// ============ Internal ==============
     /// ====================================
+
+    /// @notice Get recipient status
+    /// @dev The global 'Status' is used at the protocol level and most strategies will use this.
+    ///      todo: finish this
+    /// @param _recipientId ID of the recipient
+    /// @return Status Returns the global recipient status
+    function _getRecipientStatus(address _recipientId) internal view override returns (Status) {
+        return _getRecipient(_recipientId).recipientStatus;
+    }
+
+    /// @notice Checks if address is eligible allocator.
+    /// @dev This is used to check if the allocator is a pool manager and able to allocate funds from the pool
+    /// @param _allocator Address of the allocator
+    /// @return 'true' if the allocator is a pool manager, otherwise false
+    function _isValidAllocator(address _allocator) internal view override returns (bool) {
+        return allo.isPoolManager(poolId, _allocator);
+    }
+
+    function _resetOfferedMilestones(address _recipientId) internal {
+        delete offeredMilestones[_recipientId];
+    } 
 
     /// @notice Register a recipient to the pool.
     /// @dev Emits a 'Registered()' event

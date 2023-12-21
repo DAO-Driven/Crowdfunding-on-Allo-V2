@@ -321,7 +321,7 @@ describe("Contract Deployment", function () {
 
       const testRecipientAddressBalanceAfter = await ethers.provider.getBalance(testRecipientAddress);
 
-      console.log(colors.white(`testRecipient Address Balance Before Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceAfter)} ETH`));
+      console.log(colors.white(`testRecipient Address Balance After Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceAfter)} ETH`));
     })
   });
 });  

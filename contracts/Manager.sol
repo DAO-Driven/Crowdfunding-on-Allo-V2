@@ -6,12 +6,19 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {Errors} from "./libraries/Errors.sol";
 import {Transfer} from "./libraries/Transfer.sol";
 import "./libraries/Native.sol";
-import {IAlloV2, InitializeData, NewRecipientParams, Status, ProjectSupply, Suppliers, SupplierPower, ActiveProjects} from "./libraries/Helpers.sol";
-
-
+import {IAlloV2, NewRecipientParams, Status, ProjectSupply, Suppliers, SupplierPower, ActiveProjects} from "./libraries/Helpers.sol";
 import "hardhat/console.sol";
 
+
 contract Manager is ReentrancyGuard, Errors, Transfer{
+
+    struct InitializeData {
+        bool registryGating;
+        bool metadataRequired;
+        bool grantAmountRequired;
+        SupplierPower[] supliersPower;
+    }
+
     IRegistry registry;
     IAlloV2 allo;
     address strategy;
@@ -160,6 +167,10 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         return pojectSupply[_projectId];
     }
 
+    function getProfiles() external view returns (bytes32[] memory) {
+        return profiles;
+    }
+
     function _extractValidSupliers(bytes32 _projectId) internal view returns (SupplierPower[] memory) {
         Suppliers storage projectSuppliers = suppliers[_projectId];
         SupplierPower[] memory suppliersPower = new SupplierPower[](projectSuppliers.suppliers.length);
@@ -187,40 +198,6 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     function _projectExists(bytes32 profileId) public view returns (bool) {
         IRegistry.Profile memory profile = registry.getProfileById(profileId);
         return profile.owner != address(0);
-    }
-
-    function getProfiles() external view returns (bytes32[] memory) {
-        return profiles;
-    }
-
-    function getAlloRegistry() external view returns (IRegistry) {
-        return allo.getRegistry();
-    }
-
-    function allocateFundsToRecipient(
-        uint256 _poolId,
-        address _recipientId, 
-        Status _recipientStatus, 
-        uint256 _grantAmount
-    )
-        external
-    {
-
-        bytes memory encodedAllocateParams = abi.encode(
-            _recipientId,
-            _recipientStatus,
-            _grantAmount
-        );
-
-        return allo.allocate(_poolId, encodedAllocateParams);
-    }
-
-    function distributeFundsToRecipient(uint256 _poolId, address[] memory _recipientIds)
-        external
-    {
-        bytes memory emptyData = "";
-
-        return allo.distribute(_poolId, _recipientIds, emptyData);
     }
     
     /// @notice This contract should be able to receive native token
