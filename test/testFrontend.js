@@ -80,7 +80,7 @@ describe("Contract Deployment", function () {
       const txDevProfile_1 = await managerContract.registerProject(
         ethers.utils.parseEther("1"),
         77779876, 
-        "Dev Profile 1", 
+        "Dev Profile 2", 
         [1, "test pointer"], 
         testRecipientAddress,
         "Test Description"
@@ -94,7 +94,7 @@ describe("Contract Deployment", function () {
       const txDevProfile_2 = await managerContract.registerProject(
         ethers.utils.parseEther("1"),
         7765479876, 
-        "Dev Profile 2", 
+        "Dev Profile 3", 
         [1, "test pointer"], 
         testRecipientAddress,
         "Test Description"
@@ -108,7 +108,7 @@ describe("Contract Deployment", function () {
       const txDevProfile_3 = await managerContract.registerProject(
         ethers.utils.parseEther("1"),
         7765411111, 
-        "Dev Profile 2", 
+        "Dev Profile 4", 
         [1, "test pointer"], 
         testRecipientAddress,
         "Test Description"

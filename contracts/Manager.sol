@@ -80,6 +80,10 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         return registry.getProfileById(profileId);
     }
 
+    function getProjectPool(bytes32 projectId) public view returns (uint256) {
+        return projectPool[projectId];
+    }
+
     function registerProject( 
         uint256 _needs,
         uint256 _nonce,
