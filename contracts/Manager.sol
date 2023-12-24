@@ -36,9 +36,8 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         string description; 
     }
 
-    struct Suppliers {
-        address[] suppliers;
-        mapping(address => int256) supplyById;   
+    struct SuppliersById {
+        mapping(address => uint256) supplyById;   
     }
 
     struct SupplierPower {
@@ -55,8 +54,9 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     /// ================================
 
     bytes32[] profiles;
+    mapping(bytes32 => address[]) projectSuppliers;
+    mapping(bytes32 => SuppliersById) projectSuppliersById;
     mapping(bytes32 => ProjectSupply) pojectSupply;
-    mapping(bytes32 => Suppliers) suppliers;
     mapping(bytes32 => address) projectExecutor;
     mapping(bytes32 => uint256) projectPool;
 
@@ -76,12 +76,20 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         registry = IRegistry(registryAddress);
     }
 
-    function getProfile(bytes32 profileId) public view returns (IRegistry.Profile memory) {
-        return registry.getProfileById(profileId);
+    function getProfile(bytes32 _projectId) public view returns (IRegistry.Profile memory) {
+        return registry.getProfileById(_projectId);
     }
 
-    function getProjectPool(bytes32 projectId) public view returns (uint256) {
-        return projectPool[projectId];
+    function getProjectPool(bytes32 _projectId) public view returns (uint256) {
+        return projectPool[_projectId];
+    }
+
+    function getProjectSuppliers(bytes32 _projectId) public view returns (address[] memory) {
+        return projectSuppliers[_projectId];
+    }
+
+    function getProjectSupplierById(bytes32 _projectId, address _supplier) public view returns (uint256) {
+        return projectSuppliersById[_projectId].supplyById[_supplier];
     }
 
     function registerProject( 
@@ -116,17 +124,20 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
         require(_projectExists(_projectId), "Project does not exist");
         if (_amount == 0 || _amount != msg.value) revert NOT_ENOUGH_FUNDS();
-        if (suppliers[_projectId].supplyById[msg.sender] < 0) revert SUPPLY_IS_ALLOWED_ONLY_ONCE();
 
         pojectSupply[_projectId].has += _amount;
-        suppliers[_projectId].supplyById[msg.sender] = int256(_amount);
-        suppliers[_projectId].suppliers.push(msg.sender);
+
+        if (projectSuppliersById[_projectId].supplyById[msg.sender] == 0){
+            projectSuppliers[_projectId].push(msg.sender);
+        }
+
+        projectSuppliersById[_projectId].supplyById[msg.sender] += _amount;
 
         emit ProjectFunded(_projectId, _amount);
 
         if (pojectSupply[_projectId].has >= pojectSupply[_projectId].need){
 
-            SupplierPower[] memory validSupliers = _extractValidSupliers(_projectId);
+            SupplierPower[] memory validSupliers = _extractSupliers(_projectId);
 
             InitializeData memory initData = InitializeData({
                 registryGating: false,
@@ -184,44 +195,45 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     function revokeProjectSupply(bytes32 _projectId) external nonReentrant {
         require(_projectExists(_projectId), "Project does not exist");
 
-        int256 amount = suppliers[_projectId].supplyById[msg.sender];
-
+        uint256 amount = projectSuppliersById[_projectId].supplyById[msg.sender];
         require(amount > 0, "SUPPLY NOT FOUND");
 
-        uint256 refundAmount = uint256(amount);
+        delete projectSuppliersById[_projectId].supplyById[msg.sender];
 
-        suppliers[_projectId].supplyById[msg.sender] = -1;
-        pojectSupply[_projectId].has -= refundAmount;
+        pojectSupply[_projectId].has -= amount;
 
-        _transferAmount(NATIVE, msg.sender, refundAmount);
+        address[] memory updatedSuppliers = new address[](projectSuppliers[_projectId].length - 1);
+        uint j = 0;
+
+        for (uint i = 0; i < projectSuppliers[_projectId].length; i++) {
+            if (projectSuppliers[_projectId][i] != msg.sender) {
+                updatedSuppliers[j] = projectSuppliers[_projectId][i];
+                j++;
+            }
+        }
+
+        projectSuppliers[_projectId] = updatedSuppliers;
+
+        _transferAmount(NATIVE, msg.sender, amount);
     }
 
     function getProjectSupply(bytes32 _projectId) public view returns (ProjectSupply memory) {
         return pojectSupply[_projectId];
     }
 
-    function _extractValidSupliers(bytes32 _projectId) internal view returns (SupplierPower[] memory) {
-        Suppliers storage projectSuppliers = suppliers[_projectId];
-        SupplierPower[] memory suppliersPower = new SupplierPower[](projectSuppliers.suppliers.length);
-        uint actualLength = 0;
+    function _extractSupliers(bytes32 _projectId) internal view returns (SupplierPower[] memory) {
 
-        for (uint i = 0; i < projectSuppliers.suppliers.length; i++) {
-            address supplierId = projectSuppliers.suppliers[i];
-            int256 supplierPower = projectSuppliers.supplyById[supplierId];
+        SupplierPower[] memory suppliersPower = new SupplierPower[](projectSuppliers[_projectId].length);
 
-            if (supplierPower > 0) {
-                suppliersPower[actualLength] = SupplierPower(supplierId, uint256(supplierPower));
-                actualLength++;
-            }
+        for (uint i = 0; i < projectSuppliers[_projectId].length; i++) {
+            
+            address supplierId = projectSuppliers[_projectId][i];
+            uint256 supplierPower = projectSuppliersById[_projectId].supplyById[supplierId];
+
+            suppliersPower[i] = SupplierPower(supplierId, uint256(supplierPower));
         }
 
-        SupplierPower[] memory validSuppliersPower = new SupplierPower[](actualLength);
-
-        for (uint i = 0; i < actualLength; i++) {
-            validSuppliersPower[i] = suppliersPower[i];
-        }
-
-        return validSuppliersPower;
+        return suppliersPower;
     }
 
     function _projectExists(bytes32 profileId) public view returns (bool) {
