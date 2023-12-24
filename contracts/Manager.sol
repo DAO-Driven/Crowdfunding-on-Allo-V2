@@ -6,11 +6,21 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {Errors} from "./libraries/Errors.sol";
 import {Transfer} from "./libraries/Transfer.sol";
 import "./libraries/Native.sol";
-import {IAlloV2, NewRecipientParams, Status, ProjectSupply, Suppliers, SupplierPower, ActiveProjects} from "./libraries/Helpers.sol";
+import {IAllo} from "./interfaces/IAllo.sol";
 import "hardhat/console.sol";
 
 
 contract Manager is ReentrancyGuard, Errors, Transfer{
+
+    enum Status {
+        None,
+        Pending,
+        Accepted,
+        Rejected,
+        Appealed,
+        InReview,
+        Canceled
+    }
 
     struct InitializeData {
         bool registryGating;
@@ -19,8 +29,28 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         SupplierPower[] supliersPower;
     }
 
+    struct ProjectSupply {
+        uint256 need;
+        uint256 has;    
+    }
+
+    struct Suppliers {
+        address[] suppliers;
+        mapping(address => int256) supplyById;   
+    }
+
+    struct ActiveProjects {
+        bytes32 projectId;
+        uint256 poolId;
+    }
+
+    struct SupplierPower {
+        address supplierId;
+        uint256 supplierPowerr;
+    }
+
     IRegistry registry;
-    IAlloV2 allo;
+    IAllo allo;
     address strategy;
 
     /// ================================
@@ -29,9 +59,9 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
     bytes32[] profiles;
     ActiveProjects[] activeProjects;
-    mapping(bytes32 => ProjectSupply) private pojectSupply;
-    mapping(bytes32 => Suppliers) private suppliers;
-    mapping(bytes32 => address) private projectExecutor;
+    mapping(bytes32 => ProjectSupply) pojectSupply;
+    mapping(bytes32 => Suppliers) suppliers;
+    mapping(bytes32 => address) projectExecutor;
 
     /// ===============================
     /// ========== Events =============
@@ -42,7 +72,7 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
     constructor(address alloAddress, address _strategy) {
         
-        allo = IAlloV2(alloAddress);
+        allo = IAllo(alloAddress);
         strategy = _strategy;
 
         address registryAddress = address(allo.getRegistry());
@@ -65,6 +95,8 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         address[] memory members = new address[](2);
         members[0] = _recipient;
         members[1] = address(this);
+
+        console.log("====== Manager contract registerProject");
 
         profileId = registry.createProfile(_nonce, _name, _metadata, _owner, members);
         profiles.push(profileId);

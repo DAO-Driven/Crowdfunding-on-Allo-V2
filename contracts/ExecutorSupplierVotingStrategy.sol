@@ -12,7 +12,6 @@ import {IRegistry} from "./interfaces/IRegistry.sol";
 import {BaseStrategy} from "./BaseStrategy.sol";
 // Internal Libraries
 import {Metadata} from "./libraries/Metadata.sol";
-import {SupplierPower} from "./libraries/Helpers.sol";
 
 
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣾⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -75,6 +74,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     struct SubmiteddMilestone {
         uint256 votesFor;
         uint256 votesAgainst;
+    }
+
+    struct SupplierPower {
+        address supplierId;
+        uint256 supplierPowerr;
     }
 
     /// ===============================

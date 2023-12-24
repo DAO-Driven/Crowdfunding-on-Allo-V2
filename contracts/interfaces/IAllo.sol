@@ -258,4 +258,14 @@ interface IAllo {
     /// @dev 1e18 represents 100%
     /// @return feeDenominator The current fee denominator
     function getFeeDenominator() external view returns (uint256);
+
+    function createPoolWithCustomStrategy(
+        bytes32 _profileId,
+        address _strategy,
+        bytes memory _initStrategyData,
+        address _token,
+        uint256 _amount,
+        Metadata memory _metadata,
+        address[] memory _managers
+    ) external payable returns (uint256 poolId);
 }
