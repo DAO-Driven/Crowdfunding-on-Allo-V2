@@ -66,8 +66,8 @@ describe("Contract Deployment", function () {
         77777777, 
         "Dev Profile 1", 
         [1, "test pointer"], 
-        managerContract.address, 
-        testRecipientAddress
+        testRecipientAddress,
+        "Test Description of the project"
       );
 
       const txReceipt = await tx.wait();
@@ -79,11 +79,6 @@ describe("Contract Deployment", function () {
 
       console.log(colors.white("================== GET new Profile by ID:"), getProfileById[0]) 
       console.log(getProfileById);
-
-      const getAllProfiles = await managerContract.getProfiles();
-
-      console.log(colors.white("================== GET All Profiles")) 
-      console.log(getAllProfiles);
     });
 
     it("Should successfully call supplyProject and fund Project \n\n", async function () {

@@ -31,17 +31,14 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
     struct ProjectSupply {
         uint256 need;
-        uint256 has;    
+        uint256 has;   
+        string name;
+        string description; 
     }
 
     struct Suppliers {
         address[] suppliers;
         mapping(address => int256) supplyById;   
-    }
-
-    struct ActiveProjects {
-        bytes32 projectId;
-        uint256 poolId;
     }
 
     struct SupplierPower {
@@ -58,10 +55,10 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     /// ================================
 
     bytes32[] profiles;
-    ActiveProjects[] activeProjects;
     mapping(bytes32 => ProjectSupply) pojectSupply;
     mapping(bytes32 => Suppliers) suppliers;
     mapping(bytes32 => address) projectExecutor;
+    mapping(bytes32 => uint256) projectPool;
 
     /// ===============================
     /// ========== Events =============
@@ -88,22 +85,27 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         uint256 _nonce,
         string memory _name,
         Metadata memory _metadata,
-        address _owner,
-        address _recipient
+        address _recipient,
+        string memory _description
     ) external returns (bytes32 profileId) {
 
         address[] memory members = new address[](2);
         members[0] = _recipient;
         members[1] = address(this);
 
-        console.log("====== Manager contract registerProject");
-
-        profileId = registry.createProfile(_nonce, _name, _metadata, _owner, members);
+        profileId = registry.createProfile(_nonce, _name, _metadata, address(this), members);
         profiles.push(profileId);
         pojectSupply[profileId].need += _needs;
+        pojectSupply[profileId].name = _name;
+        pojectSupply[profileId].description = _description;
+
         projectExecutor[profileId] = _recipient;
 
         return profileId;
+    }
+
+    function getProfiles() public view returns (bytes32[] memory){
+        return profiles;
     }
 
     function supplyProject(bytes32 _projectId, uint256 _amount) external payable nonReentrant {
@@ -169,12 +171,7 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
             allo.registerRecipient(pool, encodedRecipientParams);
 
-             ActiveProjects memory newActiveProject = ActiveProjects({
-                projectId: _projectId,
-                poolId: pool
-            });
-
-            activeProjects.push(newActiveProject);
+            projectPool[_projectId] = pool;
 
             emit ProjectPoolCreeated( _projectId, pool);
         }
@@ -197,10 +194,6 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
     function getProjectSupply(bytes32 _projectId) public view returns (ProjectSupply memory) {
         return pojectSupply[_projectId];
-    }
-
-    function getProfiles() external view returns (bytes32[] memory) {
-        return profiles;
     }
 
     function _extractValidSupliers(bytes32 _projectId) internal view returns (SupplierPower[] memory) {

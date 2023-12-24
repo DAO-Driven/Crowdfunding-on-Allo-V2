@@ -411,8 +411,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/Manager.sol": {
-      "lastModificationDate": 1703417435675,
-      "contentHash": "097ee1043ec96ec17f178df9f914b4cc",
+      "lastModificationDate": 1703418765311,
+      "contentHash": "d1b9bbb45795c7d98a86dc632ff7757b",
       "sourceName": "contracts/Manager.sol",
       "solcConfig": {
         "version": "0.8.20",
