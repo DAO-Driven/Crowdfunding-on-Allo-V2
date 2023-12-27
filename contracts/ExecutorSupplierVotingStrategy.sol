@@ -149,6 +149,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     /// @notice Internal collection of accepted recipients able to submit milestones
     address[] private _acceptedRecipientIds;
+    address[] private _suppliersStore;
 
     /// @notice This maps accepted recipients to their details
     /// @dev 'recipientId' to 'Recipient'
@@ -204,6 +205,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         SupplierPower[] memory supliersPower =  _initData.validSupliers;
 
         for (uint i = 0; i < supliersPower.length; i++) {
+            _suppliersStore.push(supliersPower[i].supplierId);
             _suplierPower[supliersPower[i].supplierId] = supliersPower[i].supplierPowerr;
             totalSupply += supliersPower[i].supplierPowerr;
         }
@@ -258,6 +260,22 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     function getSupplierOfferedMilestonesVote(address _recipientId, address _supplier) external view returns (uint256) {
         return offeredMilestones[_recipientId].suppliersVotes[_supplier];
+    }
+
+    function getSubmittedMilestonesVotesFor(uint256 _milestoneId) external view returns (uint256) {
+        return submittedvMilestones[_milestoneId].votesFor;
+    }
+
+    function getSubmittedMilestonesVotesAgainst(uint256 _milestoneId) external view returns (uint256) {
+        return submittedvMilestones[_milestoneId].votesAgainst;
+    }
+
+    function getSupplierSubmittedMilestonesVote(uint256 _milestoneId, address _supplier) external view returns (uint256) {
+        return submittedvMilestones[_milestoneId].suppliersVotes[_supplier];
+    }
+
+    function getUpcomingMilestone(address _recipientId) external view returns (uint256) {
+        return upcomingMilestone[_recipientId];
     }
 
     /// ===============================
@@ -437,6 +455,10 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             if (submittedvMilestones[_milestoneId].votesAgainst > threshold) { 
                 milestone.milestoneStatus = _status;
 
+                for (uint i = 0; i < _suppliersStore.length; i++){
+                    submittedvMilestones[_milestoneId].suppliersVotes[_suppliersStore[i]] = 0;
+                }
+
                 delete submittedvMilestones[_milestoneId];
                 emit MilestoneStatusChanged(_recipientId, _milestoneId, _status);
             }
@@ -491,6 +513,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     }
 
     function _resetOfferedMilestones(address _recipientId) internal {
+
+        for (uint i = 0; i < _suppliersStore.length; i++){
+            offeredMilestones[_recipientId].suppliersVotes[_suppliersStore[i]] = 0;
+        }
+
         delete offeredMilestones[_recipientId];
     } 
 
