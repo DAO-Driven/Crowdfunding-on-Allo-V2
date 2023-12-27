@@ -411,8 +411,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/Manager.sol": {
-      "lastModificationDate": 1703429448536,
-      "contentHash": "d12f5b9f0878a49622924258ad8d16f4",
+      "lastModificationDate": 1703493659690,
+      "contentHash": "c80b6af3ca98de2c209f52ba114cb82f",
       "sourceName": "contracts/Manager.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -455,8 +455,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/ExecutorSupplierVotingStrategy.sol": {
-      "lastModificationDate": 1703417475898,
-      "contentHash": "0c8c14f9c1557a9d2b5069d3311ea693",
+      "lastModificationDate": 1703602305775,
+      "contentHash": "7ea05a48fcd128ea70b653ab39f6b8ad",
       "sourceName": "contracts/ExecutorSupplierVotingStrategy.sol",
       "solcConfig": {
         "version": "0.8.20",

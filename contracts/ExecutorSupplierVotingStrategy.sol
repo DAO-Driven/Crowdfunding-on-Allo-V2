@@ -69,11 +69,13 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         Milestone[] milestones;
         uint256 votesFor;
         uint256 votesAgainst;
+        mapping(address => uint256) suppliersVotes;
     }
 
     struct SubmiteddMilestone {
         uint256 votesFor;
         uint256 votesAgainst;
+        mapping(address => uint256) suppliersVotes;
     }
 
     struct SupplierPower {
@@ -88,11 +90,16 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Throws when the milestone is invalid.
     error INVALID_MILESTONE();
 
+    error INVALID_MILESTONES_PERCENTAGE();
+
     /// @notice Throws when the milestone is already accepted.
     error MILESTONE_ALREADY_ACCEPTED();
 
     /// @notice Throws when the milestones are already set.
     error MILESTONES_ALREADY_SET();
+
+    /// @notice Throws when the milestones are reviewed by supplier.
+    error ALREADY_REVIEWED();
 
     /// @notice Throws when the allocation exceeds the pool amount.
     error ALLOCATION_EXCEEDS_POOL_AMOUNT();
@@ -241,6 +248,18 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         return milestones[_recipientId];
     }
 
+    function getOfferedMilestonesVotesFor(address _recipientId) external view returns (uint256) {
+        return offeredMilestones[_recipientId].votesFor;
+    }
+
+    function getOfferedMilestonesVotesAgainst(address _recipientId) external view returns (uint256) {
+        return offeredMilestones[_recipientId].votesAgainst;
+    }
+
+    function getSupplierOfferedMilestonesVote(address _recipientId, address _supplier) external view returns (uint256) {
+        return offeredMilestones[_recipientId].suppliersVotes[_supplier];
+    }
+
     /// ===============================
     /// ======= External/Custom =======
     /// ===============================
@@ -285,7 +304,9 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     function reviewOfferedtMilestones(address _recipientId, Status _status) external onlyPoolManager(msg.sender) {
         
-        // TODO: check if msg.sender already reviewed 
+        if (offeredMilestones[_recipientId].suppliersVotes[msg.sender] > 0){
+            revert ALREADY_REVIEWED();
+        }
 
         Recipient storage recipient = _recipients[_recipientId];
 
@@ -295,6 +316,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
         uint256 managerVotingPower = _suplierPower[msg.sender];
         uint256 threshold = totalSupply * thresholdPercentage / 100;
+
+        offeredMilestones[_recipientId].suppliersVotes[msg.sender] = managerVotingPower;
 
         if (_status == Status.Accepted) {
 
@@ -365,7 +388,9 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     function reviewSubmitedMilestone(address _recipientId, uint256 _milestoneId, Status _status) external onlyPoolManager(msg.sender){
 
-        // TODO: check if msg.sender already reviewed 
+        if (submittedvMilestones[_milestoneId].suppliersVotes[msg.sender] > 0){
+            revert ALREADY_REVIEWED();
+        }
 
         Recipient memory recipient = _recipients[_recipientId];
 
@@ -387,6 +412,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
         uint256 managerVotingPower = _suplierPower[msg.sender];
         uint256 threshold = totalSupply * thresholdPercentage / 100;
+
+        submittedvMilestones[_milestoneId].suppliersVotes[msg.sender] = managerVotingPower;
 
         if (_status == Status.Accepted) {
 
@@ -696,7 +723,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
             // Reverts if the milestone status is 'None'
             if (milestone.milestoneStatus != Status.None) {
-                revert INVALID_MILESTONE();
+                revert INVALID_MILESTONE_STATUS();
             }
 
             // TODO: I see we check on line 649, but it seems we need to check when added it is NOT greater than 100%?
@@ -712,7 +739,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         }
 
         if (totalAmountPercentage != 1e18) {
-            revert INVALID_MILESTONE();
+            revert INVALID_MILESTONES_PERCENTAGE();
         }
 
         bytes memory encodedAllocateParams = abi.encode(

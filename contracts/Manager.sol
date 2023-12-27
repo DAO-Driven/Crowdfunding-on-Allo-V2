@@ -92,6 +92,10 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         return projectSuppliersById[_projectId].supplyById[_supplier];
     }
 
+    function getProjectExecutor(bytes32 _projectId) public view returns (address) {
+        return projectExecutor[_projectId];
+    }
+
     function registerProject( 
         uint256 _needs,
         uint256 _nonce,
