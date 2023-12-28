@@ -14,6 +14,7 @@ import {BaseStrategy} from "./BaseStrategy.sol";
 import {Metadata} from "./libraries/Metadata.sol";
 
 
+
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣾⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣿⣿⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⣿⢿⣿⣿⣿⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -78,6 +79,12 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         mapping(address => uint256) suppliersVotes;
     }
 
+    struct RejectProject {
+        uint256 votesFor;
+        uint256 votesAgainst;
+        mapping(address => uint256) suppliersVotes;
+    }
+
     struct SupplierPower {
         address supplierId;
         uint256 supplierPowerr;
@@ -104,6 +111,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Throws when the allocation exceeds the pool amount.
     error ALLOCATION_EXCEEDS_POOL_AMOUNT();
 
+    error INVALID_STATUS();
+
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -117,6 +126,9 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     /// @notice Emitted for the status change of a milestone.
     event MilestoneStatusChanged(address recipientId, uint256 milestoneId, Status status);
+
+    event ProjectRejectDeclined();
+    event ProjectRejected();
 
     /// @notice Emitted for the milestones set.
     event MilestonesSet(address recipientId, uint256 milestonesLength);
@@ -157,6 +169,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     mapping(address => uint256) private _suplierPower;
     mapping(address => OfferedMilestones) offeredMilestones;
 
+    RejectProject projectReject;
+
     /// @notice This maps accepted recipients to their milestones
     /// @dev 'recipientId' to 'Milestone'
     mapping(address => Milestone[]) public milestones;
@@ -185,7 +199,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @custom:data (bool registryGating, bool metadataRequired, bool grantAmountRequired)
     function initialize(uint256 _poolId, bytes memory _data) external virtual override {
         (InitializeData memory initData) = abi.decode(_data, (InitializeData));
-        __DirectGrantsSimpleStrategy_init(_poolId, initData);
+        _ExecutorSupplierVotingStrategy_init(_poolId, initData);
         emit Initialized(_poolId, _data);
     }
 
@@ -193,7 +207,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @dev You only need to pass the 'poolId' to initialize the BaseStrategy and the rest is specific to the strategy
     /// @param _poolId ID of the pool - required to initialize the BaseStrategy
     /// @param _initData The init params for the strategy (bool registryGating, bool metadataRequired, bool grantAmountRequired)
-    function __DirectGrantsSimpleStrategy_init(uint256 _poolId, InitializeData memory _initData) internal {
+    function _ExecutorSupplierVotingStrategy_init(uint256 _poolId, InitializeData memory _initData) internal {
         // Initialize the BaseStrategy
         __BaseStrategy_init(_poolId);
 
@@ -467,29 +481,47 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         emit SubmittedvMilestoneReviewed(_recipientId, _milestoneId, _status);
     }
 
-    /// @notice Toggle the status between active and inactive.
-    /// @dev 'msg.sender' must be a pool manager to close the pool. Emits a 'PoolActive()' event.
-    /// @param _flag The flag to set the pool to active or inactive
-    function setPoolActive(bool _flag) external onlyPoolManager(msg.sender) {
-        _setPoolActive(_flag);
-        emit PoolActive(_flag);
+    function rejetProject(Status _status) external onlyPoolManager(msg.sender){ 
+
+        if (_status != Status.Accepted && _status != Status.Rejected) {
+            revert INVALID_STATUS();
+        }
+
+
+        if (projectReject.suppliersVotes[msg.sender] > 0){
+            revert ALREADY_REVIEWED();
+        }
+
+        uint256 managerVotingPower = _suplierPower[msg.sender];
+        uint256 threshold = totalSupply * thresholdPercentage / 100;
+
+        if (_status == Status.Accepted) {
+
+            projectReject.votesFor += managerVotingPower;
+            
+            if (projectReject.votesFor > threshold) { 
+                _setPoolActive(false);
+                _distributeFundsBackToSuppliers();
+
+                emit ProjectRejected();
+            }
+        }
+        else if (_status == Status.Rejected){
+
+            projectReject.votesAgainst += managerVotingPower;
+            
+            if (projectReject.votesAgainst > threshold) { 
+
+                for (uint i = 0; i < _suppliersStore.length; i++){
+                    projectReject.suppliersVotes[_suppliersStore[i]] = 0;
+                }
+
+                delete projectReject;
+
+                emit ProjectRejectDeclined();
+            }
+        }
     }
-
-    /// @notice Withdraw funds from pool.
-    /// @dev 'msg.sender' must be a pool manager to withdraw funds.
-    /// @param _amount The amount to be withdrawn
-
-
-    // function withdraw(uint256 _amount) external onlyPoolManager(msg.sender) onlyInactivePool {
-    //     // Decrement the pool amount
-    //     poolAmount -= _amount;
-
-    //     // Transfer the amount to the pool manager
-    //     _transferAmount(allo.getPool(poolId).token, msg.sender, _amount);
-    // }
-
-
-
 
     /// ====================================
     /// ============ Internal ==============
@@ -503,6 +535,21 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     function _getRecipientStatus(address _recipientId) internal view override returns (Status) {
         return _getRecipient(_recipientId).recipientStatus;
     }
+
+    function _distributeFundsBackToSuppliers() private { 
+
+        for (uint i = 0; i < _suppliersStore.length; i++){
+
+            uint256 percentage = _suplierPower[_suppliersStore[i]];
+            uint256 amount = poolAmount * percentage / 1e18;
+            IAllo.Pool memory pool = allo.getPool(poolId);
+
+            console.log("======> Sending:", amount, "-To:", _suppliersStore[i]);
+
+            _transferAmount(pool.token, _suppliersStore[i], amount);
+        }
+    }
+
 
     /// @notice Checks if address is eligible allocator.
     /// @dev This is used to check if the allocator is a pool manager and able to allocate funds from the pool
