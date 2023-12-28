@@ -7,6 +7,7 @@ import {Errors} from "./libraries/Errors.sol";
 import {Transfer} from "./libraries/Transfer.sol";
 import "./libraries/Native.sol";
 import {IAllo} from "./interfaces/IAllo.sol";
+import {IStrategyFactory} from "./interfaces/IStrategyFactory.sol";
 import "hardhat/console.sol";
 
 
@@ -48,6 +49,7 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     IRegistry registry;
     IAllo allo;
     address strategy;
+    IStrategyFactory strategyFactory;
 
     /// ================================
     /// ========== Storage =============
@@ -59,6 +61,7 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     mapping(bytes32 => ProjectSupply) pojectSupply;
     mapping(bytes32 => address) projectExecutor;
     mapping(bytes32 => uint256) projectPool;
+    mapping(bytes32 => address) projectStrategy;
 
     /// ===============================
     /// ========== Events =============
@@ -67,10 +70,11 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     event ProjectFunded(bytes32 indexed projectId, uint256 amount);
     event ProjectPoolCreeated(bytes32 projectId, uint256 poolId);
 
-    constructor(address alloAddress, address _strategy) {
+    constructor(address alloAddress, address _strategy, address _strategyFactory) {
         
         allo = IAllo(alloAddress);
         strategy = _strategy;
+        strategyFactory = IStrategyFactory(_strategyFactory);
 
         address registryAddress = address(allo.getRegistry());
         registry = IRegistry(registryAddress);
@@ -94,6 +98,10 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
     function getProjectExecutor(bytes32 _projectId) public view returns (address) {
         return projectExecutor[_projectId];
+    }
+
+    function getProjectStrategy(bytes32 _projectId) public view returns (address) {
+        return projectStrategy[_projectId];
     }
 
     function registerProject( 
@@ -165,11 +173,11 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
             bytes memory encodedInitData = abi.encode(initData);
             uint256 grantAmount = pojectSupply[_projectId].need;
-
+            projectStrategy[_projectId] = strategyFactory.createStrategy(strategy);
 
             uint256 pool = allo.createPoolWithCustomStrategy{value: msg.value}(
                 _projectId,
-                strategy,
+                projectStrategy[_projectId],
                 encodedInitData,
                 NATIVE,
                 0,

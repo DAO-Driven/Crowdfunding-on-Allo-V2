@@ -151,7 +151,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     bool public grantAmountRequired;
 
     uint256 public totalSupply;
-    uint256 public thresholdPercentage = 70;
+    uint256 public thresholdPercentage;
 
     /// @notice The 'Registry' contract interface.
     IRegistry private _registry;
@@ -215,6 +215,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         registryGating = _initData.registryGating;
         metadataRequired = _initData.metadataRequired;
         grantAmountRequired = _initData.grantAmountRequired;
+        thresholdPercentage = 70;
 
         SupplierPower[] memory supliersPower =  _initData.validSupliers;
 
@@ -292,6 +293,14 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         return upcomingMilestone[_recipientId];
     }
 
+    function getRejectProjectVotesFor() external view returns (uint256) {
+        return projectReject.votesFor;
+    }
+
+    function getRejectProjectVotesAgainst() external view returns (uint256) {
+        return projectReject.votesAgainst;
+    }
+
     /// ===============================
     /// ======= External/Custom =======
     /// ===============================
@@ -356,6 +365,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             offeredMilestones[_recipientId].votesFor += managerVotingPower;
 
             if (offeredMilestones[_recipientId].votesFor > threshold) {
+
                 _recipients[_recipientId].milestonesReviewStatus = _status;
                 _setMilestones(_recipientId, offeredMilestones[_recipientId].milestones);
                 emit OfferedMilestonesAccepted(_recipientId);

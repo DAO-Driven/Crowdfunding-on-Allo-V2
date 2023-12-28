@@ -19,14 +19,18 @@ describe("Contract Deployment", function () {
   before(async function () {
     // Use the first account as the deployer
     deployer = new ethers.Wallet(deployerPrivateKey, ethers.provider);
+    const alloAddress = "0x1133eA7Af70876e64665ecD07C0A0476d09465a1";
 
     const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy", deployer);
-    executorSupplierVotingStrategy = await ExecutorSupplierVotingStrategy.deploy("0x1133eA7Af70876e64665ecD07C0A0476d09465a1", strategyName);
+    executorSupplierVotingStrategy = await ExecutorSupplierVotingStrategy.deploy(alloAddress, strategyName);
     await executorSupplierVotingStrategy.deployed();
 
-    const alloAddress = "0x1133eA7Af70876e64665ecD07C0A0476d09465a1";
+    const StrategyFactory = await ethers.getContractFactory("StrategyFactory", deployer);
+    const strategyFactory = await StrategyFactory.deploy();
+    await strategyFactory.deployed();
+
     const ManagerContractInstance = await ethers.getContractFactory("Manager", deployer);
-    managerContract = await ManagerContractInstance.deploy(alloAddress, executorSupplierVotingStrategy.address);
+    managerContract = await ManagerContractInstance.deploy(alloAddress, executorSupplierVotingStrategy.address, strategyFactory.address);
     await managerContract.deployed();
 
     const fundAmount = ethers.utils.parseEther("10"); // 1 ether, for example
@@ -176,7 +180,14 @@ describe("Contract Deployment", function () {
       // Import the account using its private key
       const privateKey = testRecipientPrivateKey;
       const wallet = new ethers.Wallet(privateKey, ethers.provider);
-      const executorSupplierVotingStrategyWithSigner = executorSupplierVotingStrategy.connect(wallet);
+      const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+
+      expect(ethers.utils.isAddress(clonedStrategyAddress)).to.be.true;
+
+      const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+      const executorSupplierVotingStrategyWithSigner = await ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(wallet);
+
+      console.log(colors.white(`Connected to cloned strategy at address: ${clonedStrategyAddress}`));
 
       // Define the metadata structure as per your contract requirements
       const metadata = {
@@ -225,18 +236,26 @@ describe("Contract Deployment", function () {
     it("Should successfully call reviewOfferedtMilestones() and return milestones data", async function () {  
   
       const milestonesReviewingaccounts = [supplier_1, supplier_2, supplier_3];
-  
+      const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+
       for (const account of milestonesReviewingaccounts) {
-        // Connect the managerContract to the current account (signer)
-        const executorSupplierVotingStrategyWithSigner = executorSupplierVotingStrategy.connect(account);
+
+        const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+        const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(account);
   
-        const tx = await executorSupplierVotingStrategyWithSigner.reviewOfferedtMilestones(testRecipientAddress, 2, { gasLimit: 3000000});
+        const tx = await executorSupplierVotingStrategyWithSigner.reviewOfferedtMilestones(
+          testRecipientAddress, 
+          2, 
+          { gasLimit: 3000000}
+        );
+
         const reviewMilestoneTxResult = await tx.wait();
         // console.log(colors.white("----> review Milestone Tx Result"));
         // console.log(reviewMilestoneTxResult);
       }
 
-      const executorSupplierVotingStrategyWithSigner = executorSupplierVotingStrategy.connect(supplier_1);
+      const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+      const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(supplier_1);
 
       const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getMilestones(
         testRecipientAddress,
@@ -268,7 +287,11 @@ describe("Contract Deployment", function () {
       // console.log("---- txAllocate")
       // console.log(txAllocate)
 
-      const getRecipientAfterAllocation = await executorSupplierVotingStrategy.getRecipient(testRecipientAddress);
+      const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+      const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+      const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(supplier_1);
+
+      const getRecipientAfterAllocation = await executorSupplierVotingStrategyWithSigner.getRecipient(testRecipientAddress);
     
       console.log("---- Get Recipient data after Allocation")
       console.log(getRecipientAfterAllocation)
@@ -278,7 +301,10 @@ describe("Contract Deployment", function () {
     it("Should successfully call submitMilestone() and emit MilestoneSubmitted event", async function () {
 
       const wallet = new ethers.Wallet(testRecipientPrivateKey, ethers.provider);
-      const executorSupplierVotingStrategyWithSigner = executorSupplierVotingStrategy.connect(wallet);
+
+      const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+      const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+      const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(wallet);
 
       const metadata = {
         protocol: 1,
@@ -316,8 +342,10 @@ describe("Contract Deployment", function () {
   
       for (const account of milestoneReviewingaccounts) {
 
-        const executorSupplierVotingStrategyWithSigner = executorSupplierVotingStrategy.connect(account);
-  
+        const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+        const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+        const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(account);
+
         const tx = await executorSupplierVotingStrategyWithSigner.reviewSubmitedMilestone(
           testRecipientAddress, 
           0,
