@@ -154,13 +154,6 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
             SupplierPower[] memory validSupliers = _extractSupliers(_projectId);
 
-            InitializeData memory initData = InitializeData({
-                registryGating: false,
-                metadataRequired: false,
-                grantAmountRequired: false,
-                supliersPower: validSupliers
-            });
-
             address[] memory managers = new address[](validSupliers.length + 1);
 
             for (uint i = 0; i < validSupliers.length; i++) {
@@ -169,9 +162,37 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
             managers[validSupliers.length] = address(this);
 
+            // uint256 supplierHat = _createAndMintHat(
+            //     "SUPPLIER_HAT", 
+            //     managers, 
+            //     "ipfs://bafkreiey2a5jtqvjl4ehk3jx7fh7edsjqmql6vqxdh47znsleetug44umy/"
+            // );
+
+            // console.log("=====> SUPPLIER_HAT ID:", supplierHat);
+
+            // address[] memory executorAddresses = new address[](1);
+            // executorAddresses[0] = projectExecutor[_projectId];
+
+            // uint256 executorHat = _createAndMintHat(
+            //     "EXECUTOR_HAT", 
+            //     executorAddresses, 
+            //     "ipfs://bafkreih7hjg4ehf4lqdoqstlkjxvjy7zfnza4keh2knohsle3ikjja3g2i/"
+            // );
+
+            // console.log("=====> EXECUTOR_HAT ID:", executorHat);
+
+            
+
             Metadata memory metadata = Metadata({
                 protocol: 1,
-                pointer: "empty pointer"
+                pointer: "manager webpage link"
+            });
+
+            InitializeData memory initData = InitializeData({
+                registryGating: false,
+                metadataRequired: false,
+                grantAmountRequired: false,
+                supliersPower: validSupliers
             });
 
             bytes memory encodedInitData = abi.encode(initData);
@@ -200,17 +221,7 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
             );
 
             allo.registerRecipient(pool, encodedRecipientParams);
-
             projectPool[_projectId] = pool;
-
-            
-            uint256 supplierHat = _createAndMintHat(
-                "SUPPLIER_HAT", 
-                managers, 
-                "ipfs://bafkreiey2a5jtqvjl4ehk3jx7fh7edsjqmql6vqxdh47znsleetug44umy/"
-            );
-
-            console.log("=====> SUPPLIER_HAT ID:", supplierHat);
 
             emit ProjectPoolCreeated( _projectId, pool);
         }
@@ -228,16 +239,16 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
             _imageURI
         );
 
-        // console.log("=====> NEW SUPPLIER_HAT:", supplierHat);
+        console.log("=====> NEW", _hatName, " : " , supplierHat);
 
         for (uint i = 0; i < _hatWearers.length; i++){
             hatsContract.mintHat(supplierHat, _hatWearers[i]);
         }
 
-        // for (uint i = 0; i < _hatWearers.length; i++){
-        //     bool isWearer = hatsContract.isWearerOfHat(_hatWearers[i], supplierHat);
-        //     console.log("===> Supplier:", address(_hatWearers[i]), "-Is wearer of SUPPLIER_HAT:", isWearer);
-        // }
+        for (uint i = 0; i < _hatWearers.length; i++){
+            bool isWearer = hatsContract.isWearerOfHat(_hatWearers[i], supplierHat);
+            console.log("===> Supplier:", address(_hatWearers[i]), "-Is wearer of SUPPLIER_HAT:", isWearer);
+        }
 
         return supplierHat; 
     }
