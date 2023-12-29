@@ -31,15 +31,23 @@ import {IHats} from "./interfaces/Hats/IHats.sol";
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠙⠋⠛⠙⠋⠛⠙⠋⠛⠙⠋⠃⠀⠀⠀⠀⠀⠀⠀⠀⠠⠿⠻⠟⠿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⠟⠿⠟⠿⠆⠀⠸⠿⠿⠟⠯⠀⠀⠀⠸⠿⠿⠿⠏⠀⠀⠀⠀⠀⠈⠉⠻⠻⡿⣿⢿⡿⡿⠿⠛⠁⠀⠀⠀⠀⠀⠀
 //                    allo.gitcoin.co
 
-/// @title Direct Grants Simple Strategy.
-/// @author @thelostone-mc <aditya@gitcoin.co>, @0xKurt <kurt@gitcoin.co>, @codenamejason <jason@gitcoin.co>, @0xZakk <zakk@gitcoin.co>, @nfrgosselin <nate@gitcoin.co>
+/// @title Executor Supplier Voting Strategy.
 /// @notice Strategy used to allocate & distribute funds to recipients with milestone payouts. The milestones
 ///         are set by the recipient and the pool manager can accept or reject the milestone. The pool manager
 ///         can also reject the recipient.
 contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
+
     /// ================================
     /// ========== Storage =============
     /// ================================
+
+    /// @notice Struct to hold details of an recipient
+    enum StrategyState {
+        None,
+        Active,
+        Executed,
+        Rejected
+    }
 
     /// @notice Struct to hold details of an recipient
     struct Recipient {
@@ -59,136 +67,177 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         string description;
     }
 
-    // @notice Struct to hold the init params for the strategy
+    /// @notice Struct to hold the initialization parameters for the strategy.
     struct InitializeData {
-        uint256 supplierHat;
-        uint256 executorHat;
-        SupplierPower[] validSupliers;
-        address hatsContractAddress;
+        uint256 supplierHat;          // ID of the Supplier Hat.
+        uint256 executorHat;          // ID of the Executor Hat.
+        SupplierPower[] projectSuppliers; // Array of SupplierPower, representing the power of each supplier.
+        address hatsContractAddress;  // Address of the Hats contract.
     }
 
+    /// @notice Struct to represent the offered milestones along with their voting status.
     struct OfferedMilestones {
-        Milestone[] milestones;
-        uint256 votesFor;
-        uint256 votesAgainst;
-        mapping(address => uint256) suppliersVotes;
+        Milestone[] milestones;       // Array of Milestones that are offered.
+        uint256 votesFor;             // Total number of votes in favor of the offered milestones.
+        uint256 votesAgainst;         // Total number of votes against the offered milestones.
+        mapping(address => uint256) suppliersVotes; // Mapping of supplier addresses to their vote counts.
     }
 
+    /// @notice Struct to represent a submitted milestone and its voting status.
     struct SubmiteddMilestone {
-        uint256 votesFor;
-        uint256 votesAgainst;
-        mapping(address => uint256) suppliersVotes;
+        uint256 votesFor;             // Total number of votes in favor of the submitted milestone.
+        uint256 votesAgainst;         // Total number of votes against the submitted milestone.
+        mapping(address => uint256) suppliersVotes; // Mapping of supplier addresses to their vote counts.
     }
 
+    /// @notice Struct to represent the voting status for rejecting a project.
     struct RejectProject {
-        uint256 votesFor;
-        uint256 votesAgainst;
-        mapping(address => uint256) suppliersVotes;
+        uint256 votesFor;             // Total number of votes in favor of rejecting the project.
+        uint256 votesAgainst;         // Total number of votes against rejecting the project.
+        mapping(address => uint256) suppliersVotes; // Mapping of supplier addresses to their vote counts.
     }
 
+    /// @notice Struct to represent the power of a supplier.
     struct SupplierPower {
-        address supplierId;
-        uint256 supplierPowerr;
+        address supplierId;           // Address of the supplier.
+        uint256 supplierPowerr;       // Power value associated with the supplier.
     }
+
 
     /// ===============================
     /// ========== Errors =============
     /// ===============================
 
-    /// @notice Throws when the milestone is invalid.
+    /// @notice Thrown when an invalid milestone is encountered.
     error INVALID_MILESTONE();
 
+    /// @notice Thrown when the percentage for milestones is invalid.
     error INVALID_MILESTONES_PERCENTAGE();
 
-    /// @notice Throws when the milestone is already accepted.
+    /// @notice Thrown when trying to accept a milestone that is already accepted.
     error MILESTONE_ALREADY_ACCEPTED();
 
-    /// @notice Throws when the milestones are already set.
+    /// @notice Thrown when attempting to set milestones that have already been set.
     error MILESTONES_ALREADY_SET();
 
-    /// @notice Throws when the milestones are reviewed by supplier.
+    /// @notice Thrown when a supplier has already reviewed the milestones.
     error ALREADY_REVIEWED();
 
-    /// @notice Throws when the allocation exceeds the pool amount.
+    /// @notice Thrown when the allocation amount exceeds the available amount in the pool.
     error ALLOCATION_EXCEEDS_POOL_AMOUNT();
 
+    /// @notice Thrown when an operation is attempted with an invalid status.
     error INVALID_STATUS();
 
+    /// @notice Thrown when an action requires the executor hat but the executor is not wearing it.
     error EXECUTOR_HAT_WEARING_REQUIRED();
 
+    /// @notice Thrown when an action requires the supplier hat but the supplier is not wearing it.
     error SUPPLIER_HAT_WEARING_REQUIRED();
+
 
     /// ===============================
     /// ========== Events =============
     /// ===============================
 
-    /// @notice Emitted for the registration of a recipient and the status is updated.
+    /// @notice Emitted when the status of a recipient is changed.
     event RecipientStatusChanged(address recipientId, Status status);
 
-    /// @notice Emitted for the submission of a milestone.
+    /// @notice Emitted when a milestone is submitted by a recipient.
     event MilestoneSubmitted(address recipientId, uint256 milestoneId, Metadata metadata);
+
+    /// @notice Emitted when a submitted milestone is reviewed.
     event SubmittedvMilestoneReviewed(address recipientId, uint256 milestoneId, Status status);
 
-    /// @notice Emitted for the status change of a milestone.
+    /// @notice Emitted when the status of a milestone is changed.
     event MilestoneStatusChanged(address recipientId, uint256 milestoneId, Status status);
 
+    /// @notice Emitted when a project rejection is declined.
     event ProjectRejectDeclined();
+
+    /// @notice Emitted when a project is rejected.
     event ProjectRejected();
 
-    /// @notice Emitted for the milestones set.
+    /// @notice Emitted when milestones are set for a recipient.
     event MilestonesSet(address recipientId, uint256 milestonesLength);
+
+    /// @notice Emitted when milestones for a recipient are reviewed.
     event MilestonesReviewed(address recipientId, Status status);
+
+    /// @notice Emitted when milestones are offered to a recipient.
     event MilestonesOffered(address recipientId, uint256 milestonesLength);
+
+    /// @notice Emitted when offered milestones are accepted for a recipient.
     event OfferedMilestonesAccepted(address recipientId);
+
+    /// @notice Emitted when offered milestones are rejected for a recipient.
     event OfferedMilestonesRejected(address recipientId);
+
 
     /// ================================
     /// ========== Storage =============
     /// ================================
 
-    /// @notice Holds Supplier's Hat ID.
+    /// @notice Holds the current state of the strategy.
+    StrategyState public state;
+
+    /// @notice Stores the ID of the Supplier Hat.
     uint256 public supplierHat;
 
-    /// @notice Holds Executor's Hat ID.
+    /// @notice Stores the ID of the Executor Hat.
     uint256 public executorHat;
 
+    /// @notice Total supply of tokens or resources managed by the strategy.
     uint256 public totalSupply;
+
+    /// @notice Percentage threshold for decision-making or other strategy-related actions.
     uint256 public thresholdPercentage;
 
-    /// @notice The 'Registry' contract interface.
+    /// @notice Interface to interact with the 'Registry' contract.
     IRegistry private _registry;
 
-    /// @notice The total amount allocated to grant/recipient.
+    /// @notice Total amount allocated for grants to recipients.
     uint256 public allocatedGrantAmount;
 
+    /// @notice Address of the Hats main contract.
     IHats public hatsContract;
 
-    /// @notice Internal collection of accepted recipients able to submit milestones
+    /// @notice List of recipient addresses that have been accepted and can submit milestones.
     address[] private _acceptedRecipientIds;
+
+    /// @notice Temporary storage for supplier addresses.
     address[] private _suppliersStore;
 
-    /// @notice This maps accepted recipients to their details
-    /// @dev 'recipientId' to 'Recipient'
+    /// @notice Mapping of recipient addresses to their detailed information.
+    /// @dev Maps 'recipientId' to 'Recipient' struct.
     mapping(address => Recipient) private _recipients;
+
+    /// @notice Mapping of supplier addresses to their power value.
     mapping(address => uint256) private _suplierPower;
+
+    /// @notice Mapping of recipient addresses to their offered milestones.
     mapping(address => OfferedMilestones) offeredMilestones;
 
+    /// @notice Struct holding information about project rejection voting.
     RejectProject projectReject;
 
-    /// @notice This maps accepted recipients to their milestones
-    /// @dev 'recipientId' to 'Milestone'
+    /// @notice Mapping of recipient addresses to their array of milestones.
+    /// @dev Maps 'recipientId' to an array of 'Milestone' structs.
     mapping(address => Milestone[]) public milestones;
 
-    /// @notice This maps accepted recipients to their upcoming milestone
-    /// @dev 'recipientId' to 'nextMilestone'
+    /// @notice Mapping of recipient addresses to the ID of their next upcoming milestone.
+    /// @dev Maps 'recipientId' to 'nextMilestone' ID.
     mapping(address => uint256) public upcomingMilestone;
+
+    /// @notice Mapping of milestone IDs to their submitted milestone details.
     mapping(uint256 => SubmiteddMilestone) public submittedvMilestones;
+
 
     /// ===============================
     /// ======== Constructor ==========
     /// ===============================
 
-    /// @notice Constructor for the Direct Grants Simple Strategy
+    /// @notice Constructor for the Executor Supplier Voting Strategy.
     /// @param _allo The 'Allo' contract
     /// @param _name The name of the strategy
     constructor(address _allo, string memory _name) BaseStrategy(_allo, _name) {}
@@ -210,7 +259,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice This initializes the BaseStrategy
     /// @dev You only need to pass the 'poolId' to initialize the BaseStrategy and the rest is specific to the strategy
     /// @param _poolId ID of the pool - required to initialize the BaseStrategy
-    /// @param _initData The init params for the strategy (uint256 supplierHat, uint256 executorHat)
+    /// @param _initData The init params for the strategy (uint256 supplierHat, uint256 executorHat, SupplierPower[] supliersPower, address hatsContractAddress;)
     function _ExecutorSupplierVotingStrategy_init(uint256 _poolId, InitializeData memory _initData) internal {
         // Initialize the BaseStrategy
         __BaseStrategy_init(_poolId);
@@ -221,7 +270,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         thresholdPercentage = 70;
         hatsContract = IHats(_initData.hatsContractAddress);
 
-        SupplierPower[] memory supliersPower =  _initData.validSupliers;
+        SupplierPower[] memory supliersPower =  _initData.projectSuppliers;
 
         for (uint i = 0; i < supliersPower.length; i++) {
             _suppliersStore.push(supliersPower[i].supplierId);
@@ -232,8 +281,9 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         _registry = allo.getRegistry();
 
         // Set the pool to active - this is required for the strategy to work and distribute funds
-        // NOTE: There may be some cases where you may want to not set this here, but will be strategy specific
         _setPoolActive(true);
+
+        state = StrategyState.Active;
     }
 
     /// ===============================
@@ -263,46 +313,78 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         return milestones[_recipientId];
     }
 
+    /// @notice Retrieves the number of votes in favor of the offered milestones for a specific recipient.
+    /// @param _recipientId ID of the recipient
+    /// @return uint256 Number of votes for the offered milestones
     function getOfferedMilestonesVotesFor(address _recipientId) external view returns (uint256) {
         return offeredMilestones[_recipientId].votesFor;
     }
 
+    /// @notice Retrieves the number of votes against the offered milestones for a specific recipient.
+    /// @param _recipientId ID of the recipient
+    /// @return uint256 Number of votes against the offered milestones
     function getOfferedMilestonesVotesAgainst(address _recipientId) external view returns (uint256) {
         return offeredMilestones[_recipientId].votesAgainst;
     }
 
+    /// @notice Retrieves the vote of a specific supplier on the offered milestones for a recipient.
+    /// @param _recipientId ID of the recipient
+    /// @param _supplier Address of the supplier
+    /// @return uint256 Vote count of the supplier on the offered milestones
     function getSupplierOfferedMilestonesVote(address _recipientId, address _supplier) external view returns (uint256) {
         return offeredMilestones[_recipientId].suppliersVotes[_supplier];
     }
 
+    /// @notice Retrieves the number of votes in favor of a specific submitted milestone.
+    /// @param _milestoneId ID of the milestone
+    /// @return uint256 Number of votes for the submitted milestone
     function getSubmittedMilestonesVotesFor(uint256 _milestoneId) external view returns (uint256) {
         return submittedvMilestones[_milestoneId].votesFor;
     }
 
+    /// @notice Retrieves the number of votes against a specific submitted milestone.
+    /// @param _milestoneId ID of the milestone
+    /// @return uint256 Number of votes against the submitted milestone
     function getSubmittedMilestonesVotesAgainst(uint256 _milestoneId) external view returns (uint256) {
         return submittedvMilestones[_milestoneId].votesAgainst;
     }
 
+    /// @notice Retrieves the vote of a specific supplier on a submitted milestone.
+    /// @param _milestoneId ID of the milestone
+    /// @param _supplier Address of the supplier
+    /// @return uint256 Vote count of the supplier on the submitted milestone
     function getSupplierSubmittedMilestonesVote(uint256 _milestoneId, address _supplier) external view returns (uint256) {
         return submittedvMilestones[_milestoneId].suppliersVotes[_supplier];
     }
 
+    /// @notice Retrieves the ID of the next upcoming milestone for a specific recipient.
+    /// @param _recipientId ID of the recipient
+    /// @return uint256 ID of the upcoming milestone
     function getUpcomingMilestone(address _recipientId) external view returns (uint256) {
         return upcomingMilestone[_recipientId];
     }
 
+    /// @notice Retrieves the total number of votes in favor of rejecting the project.
+    /// @return uint256 Total number of votes for rejecting the project
     function getRejectProjectVotesFor() external view returns (uint256) {
         return projectReject.votesFor;
     }
 
+    /// @notice Retrieves the total number of votes against rejecting the project.
+    /// @return uint256 Total number of votes against rejecting the project
     function getRejectProjectVotesAgainst() external view returns (uint256) {
         return projectReject.votesAgainst;
     }
+
 
     /// ===============================
     /// ======= External/Custom =======
     /// ===============================
 
+    /// @notice Sets the threshold percentage for a specific profile.
+    /// @param _newPercentage The new threshold percentage to be set.
+    /// @param _profileId The ID of the profile for which the threshold is being set.
+    /// @dev Requires the sender to be the owner of the profile and the percentage to be between 1 and 100.
     function setThresholdPercentage(uint256 _newPercentage, bytes32 _profileId) external {
         require(_registry.isOwnerOfProfile(_profileId, msg.sender), "UNAUTHORIZED");
         require(_newPercentage > 0, "Percentage must be greater than zero");
@@ -310,9 +392,13 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         thresholdPercentage = _newPercentage;
     }
 
+    /// @notice Offers milestones to a specific recipient.
+    /// @param _recipientId The ID of the recipient to whom the milestones are being offered.
+    /// @param _milestones An array of milestones to be offered.
+    /// @dev Requires the sender to be wearing the executor hat and to be either the recipient or a member of the recipient's profile.
+    /// Emits a MilestonesOffered event upon successful offering of milestones.
     function offerMilestones(address _recipientId, Milestone[] memory _milestones) external {
-
-        if (!hatsContract.isWearerOfHat( msg.sender, executorHat)){
+        if (!hatsContract.isWearerOfHat(msg.sender, executorHat)) {
             revert EXECUTOR_HAT_WEARING_REQUIRED();
         }
 
@@ -339,25 +425,27 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             offeredMilestones[_recipientId].milestones.push(_milestones[i]);
         }
 
-        emit MilestonesOffered( _recipientId, _milestones.length);
+        emit MilestonesOffered(_recipientId, _milestones.length);
     }
 
+    /// @notice Retrieves the offered milestones for a specific recipient.
+    /// @param _recipientId The ID of the recipient whose milestones are being requested.
+    /// @return Milestone[] An array of milestones offered to the recipient.
     function getOffeeredMilestones(address _recipientId) external view returns (Milestone[] memory) {
         return offeredMilestones[_recipientId].milestones;
     }
 
-    /// @notice Set milestones of the recipient
-    /// @dev Emits a 'MilestonesReviewed()' event
-    /// @param _recipientId ID of the recipient
-    /// @param _status The status of the milestone review
-
+    /// @notice Reviews the offered milestones for a specific recipient and sets their status.
+    /// @param _recipientId The ID of the recipient whose milestones are being reviewed.
+    /// @param _status The new status to be set for the offered milestones.
+    /// @dev Requires the sender to be the pool manager and wearing the supplier hat.
+    /// Emits a MilestonesReviewed event and, depending on the outcome, either OfferedMilestonesAccepted or OfferedMilestonesRejected.
     function reviewOfferedtMilestones(address _recipientId, Status _status) external onlyPoolManager(msg.sender) {
-        
-        if (!hatsContract.isWearerOfHat( msg.sender, supplierHat)){
+        if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
             revert SUPPLIER_HAT_WEARING_REQUIRED();
         }
 
-        if (offeredMilestones[_recipientId].suppliersVotes[msg.sender] > 0){
+        if (offeredMilestones[_recipientId].suppliersVotes[msg.sender] > 0) {
             revert ALREADY_REVIEWED();
         }
 
@@ -373,18 +461,14 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         offeredMilestones[_recipientId].suppliersVotes[msg.sender] = managerVotingPower;
 
         if (_status == Status.Accepted) {
-
             offeredMilestones[_recipientId].votesFor += managerVotingPower;
 
             if (offeredMilestones[_recipientId].votesFor > threshold) {
-
                 _recipients[_recipientId].milestonesReviewStatus = _status;
                 _setMilestones(_recipientId, offeredMilestones[_recipientId].milestones);
                 emit OfferedMilestonesAccepted(_recipientId);
             }
-        }
-        else if (_status == Status.Rejected){
-
+        } else if (_status == Status.Rejected) {
             offeredMilestones[_recipientId].votesAgainst += managerVotingPower;
 
             if (offeredMilestones[_recipientId].votesAgainst > threshold) {
@@ -397,59 +481,68 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         emit MilestonesReviewed(_recipientId, _status);
     }
 
-    /// @notice Submit milestone by the recipient.
-    /// @dev 'msg.sender' must be the 'recipientId' (this depends on whether your using registry gating) and must be a member
-    ///      of a 'Profile' to submit a milestone and '_recipientId'.
-    ///      must NOT be the same as 'msg.sender'. Emits a 'MilestonesSubmitted()' event.
-    /// @param _recipientId ID of the recipient
-    /// @param _metadata The proof of work
+
+    /// @notice Submits a milestone for a specific recipient.
+    /// @dev Requires that the sender is wearing the executor hat and is the same as `_recipientId`.
+    ///      The recipient must be in an 'Accepted' status, and the milestone must be the upcoming one and not already accepted.
+    ///      Emits a `MilestoneSubmitted` event upon successful submission.
+    /// @param _recipientId ID of the recipient submitting the milestone.
+    /// @param _milestoneId ID of the milestone being submitted.
+    /// @param _metadata Metadata providing proof of work or other relevant information for the milestone.
     function submitMilestone(address _recipientId, uint256 _milestoneId, Metadata calldata _metadata) external {
-        
-        if (!hatsContract.isWearerOfHat( msg.sender, executorHat)){
+        if (!hatsContract.isWearerOfHat(msg.sender, executorHat)) {
             revert EXECUTOR_HAT_WEARING_REQUIRED();
         }
         
-        // Check if the '_recipientId' is the same as 'msg.sender' and if it is NOT, revert. This
+        // Ensure that the sender is the recipient of the milestone
         if (_recipientId != msg.sender) {
             revert UNAUTHORIZED();
         }
 
         Recipient memory recipient = _recipients[_recipientId];
 
-        // Check if the recipient is 'Accepted', otherwise revert
+        // Ensure that the recipient is in an 'Accepted' status
         if (recipient.recipientStatus != Status.Accepted) {
             revert RECIPIENT_NOT_ACCEPTED();
         }
 
         Milestone[] storage recipientMilestones = milestones[_recipientId];
 
-        // Check if the milestone is the upcoming one
-        if (_milestoneId > recipientMilestones.length) {
+        // Check if the milestone ID is valid
+        if (_milestoneId >= recipientMilestones.length) {
             revert INVALID_MILESTONE();
         }
 
         Milestone storage milestone = recipientMilestones[_milestoneId];
 
-        // Check if the milestone is accepted, otherwise revert
+        // Ensure that the milestone has not already been accepted
         if (milestone.milestoneStatus == Status.Accepted) {
             revert MILESTONE_ALREADY_ACCEPTED();
         }
 
-        // Set the milestone metadata and status
+        // Update the milestone metadata and status
         milestone.metadata = _metadata;
         milestone.milestoneStatus = Status.Pending;
 
-        // Emit event for the milestone submission
+        // Emit an event to indicate successful milestone submission
         emit MilestoneSubmitted(_recipientId, _milestoneId, _metadata);
     }
 
-    function reviewSubmitedMilestone(address _recipientId, uint256 _milestoneId, Status _status) external onlyPoolManager(msg.sender){
 
-        if (!hatsContract.isWearerOfHat( msg.sender, supplierHat)){
+    /// @notice Reviews a submitted milestone for a specific recipient and updates its status.
+    /// @dev Requires the sender to be the pool manager and wearing the supplier hat.
+    ///      The recipient must be in an 'Accepted' status, and the milestone must be in a 'Pending' status.
+    ///      The function updates the milestone status based on the majority vote and distributes rewards if accepted.
+    ///      Emits a `MilestoneStatusChanged` event if the status changes and a `SubmittedvMilestoneReviewed` event regardless of the outcome.
+    /// @param _recipientId ID of the recipient whose milestone is being reviewed.
+    /// @param _milestoneId ID of the milestone being reviewed.
+    /// @param _status New status to be set for the milestone (Accepted or Rejected).
+    function reviewSubmitedMilestone(address _recipientId, uint256 _milestoneId, Status _status) external onlyPoolManager(msg.sender) {
+        if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
             revert SUPPLIER_HAT_WEARING_REQUIRED();
         }
 
-        if (submittedvMilestones[_milestoneId].suppliersVotes[msg.sender] > 0){
+        if (submittedvMilestones[_milestoneId].suppliersVotes[msg.sender] > 0) {
             revert ALREADY_REVIEWED();
         }
 
@@ -461,7 +554,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
         Milestone[] storage recipientMilestones = milestones[_recipientId];
 
-        if (_milestoneId > recipientMilestones.length) {
+        if (_milestoneId >= recipientMilestones.length) {
             revert INVALID_MILESTONE();
         }
 
@@ -477,42 +570,40 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         submittedvMilestones[_milestoneId].suppliersVotes[msg.sender] = managerVotingPower;
 
         if (_status == Status.Accepted) {
-
             submittedvMilestones[_milestoneId].votesFor += managerVotingPower;
-            
+
             if (submittedvMilestones[_milestoneId].votesFor > threshold) { 
                 milestone.milestoneStatus = _status;
-
                 address[] memory recipientIds = new address[](1);
                 recipientIds[0] = _recipientId;
-
                 allo.distribute(poolId, recipientIds, "");
-
                 emit MilestoneStatusChanged(_recipientId, _milestoneId, _status);
             }
-        }
-        else if (_status == Status.Rejected){
-
+        } else if (_status == Status.Rejected) {
             submittedvMilestones[_milestoneId].votesAgainst += managerVotingPower;
-            
+
             if (submittedvMilestones[_milestoneId].votesAgainst > threshold) { 
                 milestone.milestoneStatus = _status;
-
-                for (uint i = 0; i < _suppliersStore.length; i++){
+                for (uint i = 0; i < _suppliersStore.length; i++) {
                     submittedvMilestones[_milestoneId].suppliersVotes[_suppliersStore[i]] = 0;
                 }
-
                 delete submittedvMilestones[_milestoneId];
                 emit MilestoneStatusChanged(_recipientId, _milestoneId, _status);
             }
         }
-            
+
         emit SubmittedvMilestoneReviewed(_recipientId, _milestoneId, _status);
     }
 
-    function rejetProject(Status _status) external onlyPoolManager(msg.sender){ 
 
-        if (!hatsContract.isWearerOfHat( msg.sender, supplierHat)){
+    /// @notice Reviews and potentially rejects the project based on the supplied status.
+    /// @dev Requires the sender to be the pool manager and wearing the supplier hat.
+    ///      The function updates the project's status based on the majority vote.
+    ///      If the project is rejected, it deactivates the pool and returns funds to suppliers.
+    ///      Emits a `ProjectRejected` event if the project is rejected, or a `ProjectRejectDeclined` event if the rejection is declined.
+    /// @param _status The proposed status for the project (either Accepted or Rejected).
+    function rejectProject(Status _status) external onlyPoolManager(msg.sender) { 
+        if (!hatsContract.isWearerOfHat(msg.sender, supplierHat)) {
             revert SUPPLIER_HAT_WEARING_REQUIRED();
         }
 
@@ -520,7 +611,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             revert INVALID_STATUS();
         }
 
-        if (projectReject.suppliersVotes[msg.sender] > 0){
+        if (projectReject.suppliersVotes[msg.sender] > 0) {
             revert ALREADY_REVIEWED();
         }
 
@@ -528,74 +619,73 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         uint256 threshold = totalSupply * thresholdPercentage / 100;
 
         if (_status == Status.Accepted) {
-
             projectReject.votesFor += managerVotingPower;
-            
+
             if (projectReject.votesFor > threshold) { 
                 _setPoolActive(false);
                 _distributeFundsBackToSuppliers();
-
+                state = StrategyState.Rejected;
                 emit ProjectRejected();
             }
-        }
-        else if (_status == Status.Rejected){
-
+        } else if (_status == Status.Rejected) {
             projectReject.votesAgainst += managerVotingPower;
-            
-            if (projectReject.votesAgainst > threshold) { 
 
-                for (uint i = 0; i < _suppliersStore.length; i++){
+            if (projectReject.votesAgainst > threshold) { 
+                for (uint i = 0; i < _suppliersStore.length; i++) {
                     projectReject.suppliersVotes[_suppliersStore[i]] = 0;
                 }
-
                 delete projectReject;
-
                 emit ProjectRejectDeclined();
             }
         }
     }
 
+
     /// ====================================
     /// ============ Internal ==============
     /// ====================================
 
-    /// @notice Get recipient status
-    /// @dev The global 'Status' is used at the protocol level and most strategies will use this.
-    ///      todo: finish this
-    /// @param _recipientId ID of the recipient
-    /// @return Status Returns the global recipient status
+    /// @notice Retrieves the status of a specific recipient.
+    /// @dev Utilizes the global 'Status' defined at the protocol level.
+    ///      This function is an internal view that overrides a base contract implementation.
+    /// @param _recipientId The address ID of the recipient.
+    /// @return Status The current status of the recipient.
     function _getRecipientStatus(address _recipientId) internal view override returns (Status) {
         return _getRecipient(_recipientId).recipientStatus;
     }
 
+    /// @notice Distributes funds back to suppliers based on their contribution percentage.
+    /// @dev Iterates through all suppliers and transfers their share of the pool amount back to them.
+    ///      This function is private and is called when a project is rejected.
     function _distributeFundsBackToSuppliers() private { 
-
-        for (uint i = 0; i < _suppliersStore.length; i++){
-
+        for (uint i = 0; i < _suppliersStore.length; i++) {
             uint256 percentage = _suplierPower[_suppliersStore[i]];
             uint256 amount = poolAmount * percentage / 1e18;
             IAllo.Pool memory pool = allo.getPool(poolId);
-
             _transferAmount(pool.token, _suppliersStore[i], amount);
         }
     }
 
-    /// @notice Checks if address is eligible allocator.
-    /// @dev This is used to check if the allocator is a pool manager and able to allocate funds from the pool
-    /// @param _allocator Address of the allocator
-    /// @return 'true' if the allocator is a pool manager, otherwise false
+    /// @notice Verifies if a given address is an eligible allocator for the pool.
+    /// @dev Checks if the allocator is a pool manager authorized to allocate funds.
+    ///      This function is internal and overrides a base contract implementation.
+    /// @param _allocator The address of the allocator to be verified.
+    /// @return bool Returns 'true' if the allocator is a pool manager, otherwise 'false'.
     function _isValidAllocator(address _allocator) internal view override returns (bool) {
         return allo.isPoolManager(poolId, _allocator);
     }
 
+    /// @notice Resets the offered milestones for a specific recipient.
+    /// @dev Clears the votes and deletes the offered milestones for the recipient.
+    ///      This function is internal and is used when milestones need to be reset.
+    /// @param _recipientId The address ID of the recipient whose milestones are to be reset.
     function _resetOfferedMilestones(address _recipientId) internal {
-
-        for (uint i = 0; i < _suppliersStore.length; i++){
+        for (uint i = 0; i < _suppliersStore.length; i++) {
             offeredMilestones[_recipientId].suppliersVotes[_suppliersStore[i]] = 0;
         }
-
         delete offeredMilestones[_recipientId];
-    } 
+    }
+
 
     /// @notice Register a recipient to the pool.
     /// @dev Emits a 'Registered()' event
@@ -651,7 +741,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         emit Registered(recipientId, _data, _sender);
     }
 
-    /// @notice Allocate amount to recipent for direct grants.
+    /// @notice Allocate amount to recipent for Executor Supplier Voting Strategy.
     /// @dev '_sender' must be a pool manager to allocate. Emits 'RecipientStatusChanged() and 'Allocated()' events.
     /// @param _data The data to be decoded
     /// @custom:data (address recipientId, Status recipientStatus, uint256 grantAmount)
@@ -661,11 +751,10 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         virtual
         override
         nonReentrant
-        // onlyPoolManager(_sender)
     {
         require(_sender == address(this), "UNAUTHORIZED allocate");
         
-        // Decode the '_data'
+        // Decode the '_data'.
         (address recipientId, Status recipientStatus, uint256 grantAmount) =
             abi.decode(_data, (address, Status, uint256));
 
@@ -704,7 +793,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     }
 
     /// @notice Distribute the upcoming milestone to recipients.
-    /// @dev '_sender' must be a pool manager to distribute.
+    /// @dev '_sender' must be this strategy to distribute.
     /// @param _recipientIds The recipient ids of the distribution
     /// @param _sender The sender of the distribution
     function _distribute(address[] memory _recipientIds, bytes memory, address _sender)
@@ -754,6 +843,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
         // Increment the upcoming milestone
         upcomingMilestone[_recipientId]++;
+
+        if (upcomingMilestone[_recipientId] > recipientMilestones.length) {
+            state = StrategyState.Executed;
+            _setPoolActive(false);
+        }
 
         // Emit events for the distribution
         emit Distributed(_recipientId, recipient.recipientAddress, amount, _sender);

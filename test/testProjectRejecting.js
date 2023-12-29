@@ -360,7 +360,7 @@ describe("Contract Deployment", function () {
 
         const executorSupplierVotingStrategyWithSigner = executorSupplierVotingStrategy.connect(account);
   
-        const tx = await executorSupplierVotingStrategyWithSigner.rejetProject(
+        const tx = await executorSupplierVotingStrategyWithSigner.rejectProject(
           3, 
           { gasLimit: 3000000}
         );

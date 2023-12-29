@@ -415,4 +415,46 @@ describe("Contract Deployment", function () {
     })
   });
 
+  describe(colors.white("= DESCRIBE ================== PROJECT REJECTING =================="), function () {
+
+    it("Should successfully rejet Project by voting of suppliers", async function () {
+
+      const projetcRejectingAccounts = [supplier_1, supplier_2, supplier_3];
+
+      console.log(colors.white("\n\n====> SUPPLIERS BALANCE BEFORE REJECTING"))
+
+      for (const account of projetcRejectingAccounts) {
+
+        const supplierBalanceBefore = await ethers.provider.getBalance(account.address);
+
+        console.log(colors.yellow(`supplier Balance: ${ethers.utils.formatEther(supplierBalanceBefore)} ETH`));
+      }
+
+      for (const account of projetcRejectingAccounts) {
+
+        const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+        const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+        const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(account);
+
+        const tx = await executorSupplierVotingStrategyWithSigner.rejectProject(
+          2, 
+          { gasLimit: 3000000}
+        );
+
+        const rejectProjectTxResult = await tx.wait();
+        // console.log(colors.white("----> Reject ProjectTxResult Tx Result"));
+        // console.log(rejectProjectTxResult);
+      }
+
+      console.log(colors.white("\n\n====> SUPPLIERS BALANCE AFTER REJECTING"))
+
+      for (const account of projetcRejectingAccounts) {
+
+        const supplierBalanceBefore = await ethers.provider.getBalance(account.address);
+
+        console.log(colors.yellow(`supplier Balance: ${ethers.utils.formatEther(supplierBalanceBefore)} ETH`));
+      }
+    })
+  });
+
 });  
