@@ -203,22 +203,45 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
             projectPool[_projectId] = pool;
 
-            uint256 supplierHat = hatsContract.createHat(
-                managerHatID, 
+            
+            uint256 supplierHat = _createAndMintHat(
                 "SUPPLIER_HAT", 
-                uint32(managers.length), 
-                address(this), 
-                address(this), 
-                true, 
-                ""
+                managers, 
+                "ipfs://bafkreiey2a5jtqvjl4ehk3jx7fh7edsjqmql6vqxdh47znsleetug44umy/"
             );
 
-            console.log("=====> SUPPLIER_HAT:", supplierHat);
-
+            console.log("=====> SUPPLIER_HAT ID:", supplierHat);
 
             emit ProjectPoolCreeated( _projectId, pool);
         }
     }
+
+    function _createAndMintHat(string memory _hatName, address[] memory _hatWearers, string memory _imageURI) private returns (uint256) {
+
+        uint256 supplierHat = hatsContract.createHat(
+            managerHatID, 
+            _hatName, 
+            uint32(_hatWearers.length), 
+            address(this), 
+            address(this), 
+            true, 
+            _imageURI
+        );
+
+        // console.log("=====> NEW SUPPLIER_HAT:", supplierHat);
+
+        for (uint i = 0; i < _hatWearers.length; i++){
+            hatsContract.mintHat(supplierHat, _hatWearers[i]);
+        }
+
+        // for (uint i = 0; i < _hatWearers.length; i++){
+        //     bool isWearer = hatsContract.isWearerOfHat(_hatWearers[i], supplierHat);
+        //     console.log("===> Supplier:", address(_hatWearers[i]), "-Is wearer of SUPPLIER_HAT:", isWearer);
+        // }
+
+        return supplierHat; 
+    }
+    
 
     function revokeProjectSupply(bytes32 _projectId) external nonReentrant {
         require(_projectExists(_projectId), "Project does not exist");
@@ -264,8 +287,8 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         return suppliersPower;
     }
 
-    function _projectExists(bytes32 profileId) public view returns (bool) {
-        IRegistry.Profile memory profile = registry.getProfileById(profileId);
+    function _projectExists(bytes32 _profileId) private view returns (bool) {
+        IRegistry.Profile memory profile = registry.getProfileById(_profileId);
         return profile.owner != address(0);
     }
     
