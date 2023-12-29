@@ -52,6 +52,10 @@ describe("Contract Deployment", function () {
     console.log("managerContract Deployed Address:", managerContract.address);
   });
 
+
+
+
+  
   describe("managerContract Functionality", function () {
 
     const accounts = [supplier_1, supplier_2, supplier_3];

@@ -8,6 +8,7 @@ import {Transfer} from "./libraries/Transfer.sol";
 import "./libraries/Native.sol";
 import {IAllo} from "./interfaces/IAllo.sol";
 import {IStrategyFactory} from "./interfaces/IStrategyFactory.sol";
+import {IHats} from "./interfaces/Hats/IHats.sol";
 import "hardhat/console.sol";
 
 
@@ -50,6 +51,8 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     IAllo allo;
     address strategy;
     IStrategyFactory strategyFactory;
+    IHats public hatsContract;
+    uint256 managerHatID;
 
     /// ================================
     /// ========== Storage =============
@@ -70,12 +73,12 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     event ProjectFunded(bytes32 indexed projectId, uint256 amount);
     event ProjectPoolCreeated(bytes32 projectId, uint256 poolId);
 
-    constructor(address alloAddress, address _strategy, address _strategyFactory) {
-        
+    constructor(address alloAddress, address _strategy, address _strategyFactory, address _hatsContractAddress, uint256 _managerHatID) {
         allo = IAllo(alloAddress);
         strategy = _strategy;
         strategyFactory = IStrategyFactory(_strategyFactory);
-
+        hatsContract = IHats(_hatsContractAddress);
+        managerHatID = _managerHatID;
         address registryAddress = address(allo.getRegistry());
         registry = IRegistry(registryAddress);
     }
@@ -199,6 +202,19 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
             allo.registerRecipient(pool, encodedRecipientParams);
 
             projectPool[_projectId] = pool;
+
+            uint256 supplierHat = hatsContract.createHat(
+                managerHatID, 
+                "SUPPLIER_HAT", 
+                uint32(managers.length), 
+                address(this), 
+                address(this), 
+                true, 
+                ""
+            );
+
+            console.log("=====> SUPPLIER_HAT:", supplierHat);
+
 
             emit ProjectPoolCreeated( _projectId, pool);
         }

@@ -411,8 +411,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/Manager.sol": {
-      "lastModificationDate": 1703764084326,
-      "contentHash": "afe4f8ccf7236131d149b507be57a989",
+      "lastModificationDate": 1703845771640,
+      "contentHash": "410d99205f794260936da1bed5fd44f8",
       "sourceName": "contracts/Manager.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -446,6 +446,7 @@
         "./libraries/Native.sol",
         "./interfaces/IAllo.sol",
         "./interfaces/IStrategyFactory.sol",
+        "./interfaces/Hats/IHats.sol",
         "hardhat/console.sol"
       ],
       "versionPragmas": [
@@ -681,6 +682,154 @@
       ],
       "artifacts": [
         "Clones"
+      ]
+    },
+    "/Users/green/code/allo-v2-test/contracts/interfaces/Hats/IHats.sol": {
+      "lastModificationDate": 1703841563749,
+      "contentHash": "92483627a22130bd064a4f4bf62dee73",
+      "sourceName": "contracts/interfaces/Hats/IHats.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./IHatsIdUtilities.sol",
+        "./HatsErrors.sol",
+        "./HatsEvents.sol"
+      ],
+      "versionPragmas": [
+        ">=0.8.20"
+      ],
+      "artifacts": [
+        "IHats"
+      ]
+    },
+    "/Users/green/code/allo-v2-test/contracts/interfaces/Hats/IHatsIdUtilities.sol": {
+      "lastModificationDate": 1703841500733,
+      "contentHash": "a2701c205ca86697b9489f87d0f48ce7",
+      "sourceName": "contracts/interfaces/Hats/IHatsIdUtilities.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.20"
+      ],
+      "artifacts": [
+        "IHatsIdUtilities"
+      ]
+    },
+    "/Users/green/code/allo-v2-test/contracts/interfaces/Hats/HatsErrors.sol": {
+      "lastModificationDate": 1703841524847,
+      "contentHash": "455294b50103c2d927a6804ffd78b8f3",
+      "sourceName": "contracts/interfaces/Hats/HatsErrors.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.13"
+      ],
+      "artifacts": [
+        "HatsErrors"
+      ]
+    },
+    "/Users/green/code/allo-v2-test/contracts/interfaces/Hats/HatsEvents.sol": {
+      "lastModificationDate": 1703841551825,
+      "contentHash": "76f3e7296c10586a9b1e65aea44ad22f",
+      "sourceName": "contracts/interfaces/Hats/HatsEvents.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.20"
+      ],
+      "artifacts": [
+        "HatsEvents"
       ]
     }
   }

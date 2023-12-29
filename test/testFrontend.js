@@ -13,14 +13,18 @@ describe("Contract Deployment", function () {
   before(async function () {
     // Use the first account as the deployer
     deployer = new ethers.Wallet(deployerPrivateKey, ethers.provider);
+    const alloAddress = "0x1133eA7Af70876e64665ecD07C0A0476d09465a1";
 
     const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy", deployer);
-    executorSupplierVotingStrategy = await ExecutorSupplierVotingStrategy.deploy("0x1133eA7Af70876e64665ecD07C0A0476d09465a1", strategyName);
+    executorSupplierVotingStrategy = await ExecutorSupplierVotingStrategy.deploy(alloAddress, strategyName);
     await executorSupplierVotingStrategy.deployed();
 
-    const alloAddress = "0x1133eA7Af70876e64665ecD07C0A0476d09465a1";
+    const StrategyFactory = await ethers.getContractFactory("StrategyFactory", deployer);
+    const strategyFactory = await StrategyFactory.deploy();
+    await strategyFactory.deployed();
+
     const ManagerContractInstance = await ethers.getContractFactory("Manager", deployer);
-    managerContract = await ManagerContractInstance.deploy(alloAddress, executorSupplierVotingStrategy.address);
+    managerContract = await ManagerContractInstance.deploy(alloAddress, executorSupplierVotingStrategy.address, strategyFactory.address);
     await managerContract.deployed();
 
     const fundAmount = ethers.utils.parseEther("10"); // 1 ether, for example
@@ -45,6 +49,9 @@ describe("Contract Deployment", function () {
     expect(ethers.utils.isAddress(managerContract.address)).to.be.true;
     console.log("managerContract Deployed Address:", managerContract.address);
   });
+
+
+
 
   describe("managerContract Functionality", function () {
 
