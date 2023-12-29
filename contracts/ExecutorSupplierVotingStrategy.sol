@@ -103,7 +103,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         uint256 supplierPowerr;       // Power value associated with the supplier.
     }
 
-
     /// ===============================
     /// ========== Errors =============
     /// ===============================
@@ -119,6 +118,9 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     /// @notice Thrown when attempting to set milestones that have already been set.
     error MILESTONES_ALREADY_SET();
+
+    /// @notice Error thrown when an operation is attempted on a milestone with an inappropriate status.
+    error INVALID_MILESTONE_STATUS();
 
     /// @notice Thrown when a supplier has already reviewed the milestones.
     error ALREADY_REVIEWED();

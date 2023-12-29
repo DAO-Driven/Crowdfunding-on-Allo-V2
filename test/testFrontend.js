@@ -1,19 +1,24 @@
+require('dotenv').config();
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const colors = require('colors');
+const hatsAbi = require('./hats/hatAbi.json');
+const mainHatKey = process.env.TOP_HAT_PRIVATE_KEY;
+const hatsAddress = "0x3bc1A0Ad72417f2d411118085256fC53CBdDd137";    
+const alloAddress = "0x1133eA7Af70876e64665ecD07C0A0476d09465a1";
+const hatID = process.env.MANAGER_HAT_ID;
+const mainHAT = new ethers.Wallet(mainHatKey, ethers.provider);
 
 describe("Contract Deployment", function () {
   let managerContract, executorSupplierVotingStrategy;
   let deployer, profileId, poolId;
   let strategyName = "Executor-Supplier-Voting";
-  let deployerPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-  let testRecipientAddress = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
-  let testRecipientPrivateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+  let deployerPrivateKey = process.env.TEST_DEPLOYER_KEY;
+  let testRecipientAddress = process.env.TEST_RECIPIENT_ADDRESS;
 
   before(async function () {
     // Use the first account as the deployer
     deployer = new ethers.Wallet(deployerPrivateKey, ethers.provider);
-    const alloAddress = "0x1133eA7Af70876e64665ecD07C0A0476d09465a1";
 
     const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy", deployer);
     executorSupplierVotingStrategy = await ExecutorSupplierVotingStrategy.deploy(alloAddress, strategyName);
@@ -24,7 +29,14 @@ describe("Contract Deployment", function () {
     await strategyFactory.deployed();
 
     const ManagerContractInstance = await ethers.getContractFactory("Manager", deployer);
-    managerContract = await ManagerContractInstance.deploy(alloAddress, executorSupplierVotingStrategy.address, strategyFactory.address);
+    managerContract = await ManagerContractInstance.deploy(
+      alloAddress, 
+      executorSupplierVotingStrategy.address, 
+      strategyFactory.address,
+      hatsAddress,
+      hatID
+    );
+
     await managerContract.deployed();
 
     const fundAmount = ethers.utils.parseEther("10"); // 1 ether, for example
@@ -50,7 +62,42 @@ describe("Contract Deployment", function () {
     console.log("managerContract Deployed Address:", managerContract.address);
   });
 
+  it("Should transfer the hat to Manager", async function () {
+    const hatsContract = await ethers.getContractAt(
+        hatsAbi, 
+        hatsAddress, 
+        mainHAT
+    );
 
+    const hatId = hatID;
+
+    // Check if supplier_1 is eligible
+    const isEligible = await hatsContract.isEligible(managerContract.address, hatId);
+    console.log(`Is supplier_1 eligible for Hat ID ${hatId}:`, isEligible);
+
+    const isMainHatWearing = await hatsContract.isWearerOfHat(mainHAT.address, hatId);
+    console.log(`Is mainHAT wearing Hat ID ${hatId}:`, isMainHatWearing);
+
+
+    if (isEligible) {
+        try {
+            // Attempt to transfer the hat
+          await hatsContract.transferHat(
+              hatId, 
+              mainHAT.address, 
+              managerContract.address,
+              { gasLimit: 3000000}
+          );
+
+          console.log(`Successfully transferred Hat ID ${hatId} to managerContract`);
+
+        } catch (error) {
+            console.error(`Error during transfer of Hat ID ${hatId}:`, error);
+        }
+    } else {
+        console.log(`supplier_1 is not eligible to wear Hat ID ${hatId}`);
+    }
+  });
 
 
   describe("managerContract Functionality", function () {
@@ -125,7 +172,6 @@ describe("Contract Deployment", function () {
       const profileId_3 = txReceiptDevProfile_3.events[2].topics[1];
 
       console.log(colors.white("================== Profile ID:"), profileId_3)
-
     });
   })
 });  

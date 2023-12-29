@@ -81,8 +81,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/libraries/Errors.sol": {
-      "lastModificationDate": 1703165749510,
-      "contentHash": "1b9b5ff45cfa79791802cfc372424847",
+      "lastModificationDate": 1703882841727,
+      "contentHash": "40b0559d7dcaa795f2cbc1d9b86811cb",
       "sourceName": "contracts/libraries/Errors.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -411,8 +411,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/Manager.sol": {
-      "lastModificationDate": 1703882204735,
-      "contentHash": "d95417e429ddc9de9722c0a587653577",
+      "lastModificationDate": 1703882685830,
+      "contentHash": "084ea8ccce6f41108116f3cdedee822f",
       "sourceName": "contracts/Manager.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -457,8 +457,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/ExecutorSupplierVotingStrategy.sol": {
-      "lastModificationDate": 1703881253141,
-      "contentHash": "d70a59fcc27732d46c8f2431dabacebc",
+      "lastModificationDate": 1703882890533,
+      "contentHash": "f74c776cca38724ad27fef42b5110575",
       "sourceName": "contracts/ExecutorSupplierVotingStrategy.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -612,8 +612,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/libraries/StrategyFactory.sol": {
-      "lastModificationDate": 1703762534094,
-      "contentHash": "9c2342ce1bdcfed2f64b0586ba19734b",
+      "lastModificationDate": 1703882824290,
+      "contentHash": "9c24529d234a3b0bf384d3294ea00460",
       "sourceName": "contracts/libraries/StrategyFactory.sol",
       "solcConfig": {
         "version": "0.8.20",

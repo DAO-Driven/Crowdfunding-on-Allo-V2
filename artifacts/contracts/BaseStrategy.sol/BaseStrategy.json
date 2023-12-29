@@ -60,11 +60,6 @@
     },
     {
       "inputs": [],
-      "name": "INVALID_MILESTONE_STATUS",
-      "type": "error"
-    },
-    {
-      "inputs": [],
       "name": "INVALID_REGISTRATION",
       "type": "error"
     },
@@ -142,16 +137,6 @@
     {
       "inputs": [],
       "name": "REGISTRATION_NOT_ACTIVE",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "SUPPLY_IS_ALLOWED_ONLY_ONCE",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "SUPPLY_NOT_FOUND",
       "type": "error"
     },
     {

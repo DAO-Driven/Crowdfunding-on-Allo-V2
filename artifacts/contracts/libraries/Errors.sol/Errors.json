@@ -55,11 +55,6 @@
     },
     {
       "inputs": [],
-      "name": "INVALID_MILESTONE_STATUS",
-      "type": "error"
-    },
-    {
-      "inputs": [],
       "name": "INVALID_REGISTRATION",
       "type": "error"
     },
@@ -141,16 +136,6 @@
     },
     {
       "inputs": [],
-      "name": "SUPPLY_IS_ALLOWED_ONLY_ONCE",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "SUPPLY_NOT_FOUND",
-      "type": "error"
-    },
-    {
-      "inputs": [],
       "name": "UNAUTHORIZED",
       "type": "error"
     },
@@ -160,8 +145,8 @@
       "type": "error"
     }
   ],
-  "bytecode": "0x6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea2646970667358221220ae82ad867c0ef8230465662be7b8e8d394e486b28856c572f8c2974281e60ac664736f6c63430008140033",
-  "deployedBytecode": "0x6080604052600080fdfea2646970667358221220ae82ad867c0ef8230465662be7b8e8d394e486b28856c572f8c2974281e60ac664736f6c63430008140033",
+  "bytecode": "0x6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea2646970667358221220a7f76b524cfccb52590642490f99ce9a275835a0cfa15a4d4df59fef31d9bce564736f6c63430008140033",
+  "deployedBytecode": "0x6080604052600080fdfea2646970667358221220a7f76b524cfccb52590642490f99ce9a275835a0cfa15a4d4df59fef31d9bce564736f6c63430008140033",
   "linkReferences": {},
   "deployedLinkReferences": {}
 }

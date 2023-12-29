@@ -323,7 +323,7 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
                 pojectSupply[_projectId].need,
                 Metadata({
                     protocol: 1,
-                    pointer: "manager webpage link"
+                    pointer: "executor"
                 })
             );
 

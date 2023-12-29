@@ -5,26 +5,27 @@ const colors = require('colors');
 const hatsAbi = require('./hats/hatAbi.json');
 const mainHatKey = process.env.TOP_HAT_PRIVATE_KEY;
 const hatsAddress = "0x3bc1A0Ad72417f2d411118085256fC53CBdDd137";    
-const hatID = "10514379611564888850221646422679951602056112570474789676025373834346496";
+const alloAddress = "0x1133eA7Af70876e64665ecD07C0A0476d09465a1";
+const hatID = process.env.MANAGER_HAT_ID;
 const mainHAT = new ethers.Wallet(mainHatKey, ethers.provider);
 
 describe("Contract Deployment", function () {
   let managerContract, executorSupplierVotingStrategy;
   let deployer, profileId, poolId;
   let strategyName = "Executor-Supplier-Voting";
-  let deployerPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-  let testRecipientAddress = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
-  let testRecipientPrivateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+  let deployerPrivateKey = process.env.TEST_DEPLOYER_KEY;
+  let testRecipientAddress = process.env.TEST_RECIPIENT_ADDRESS;
+  let testRecipientPrivateKey = process.env.TEST_RECIPIENT_KEY;
 
-
-  const supplier_1 = new ethers.Wallet("0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a", ethers.provider);
-  const supplier_2 = new ethers.Wallet("0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba", ethers.provider);
-  const supplier_3 = new ethers.Wallet("0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e", ethers.provider);
+  const supplier_1 = new ethers.Wallet(process.env.TEST_SUPPLIER_1_KEY, ethers.provider);
+  const supplier_2 = new ethers.Wallet(process.env.TEST_SUPPLIER_2_KEY, ethers.provider);
+  const supplier_3 = new ethers.Wallet(process.env.TEST_SUPPLIER_3_KEY, ethers.provider);
+  const supplier_4 = new ethers.Wallet(process.env.TEST_SUPPLIER_4_KEY, ethers.provider);
+  const supplier_5 = new ethers.Wallet(process.env.TEST_SUPPLIER_5_KEY, ethers.provider);
 
   before(async function () {
     // Use the first account as the deployer
     deployer = new ethers.Wallet(deployerPrivateKey, ethers.provider);
-    const alloAddress = "0x1133eA7Af70876e64665ecD07C0A0476d09465a1";
 
     const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy", deployer);
     executorSupplierVotingStrategy = await ExecutorSupplierVotingStrategy.deploy(alloAddress, strategyName);
@@ -105,8 +106,6 @@ describe("Contract Deployment", function () {
     }
   });
 
-
-
   describe("managerContract Functionality", function () {
 
     const accounts = [supplier_1, supplier_2, supplier_3];
@@ -173,9 +172,7 @@ describe("Contract Deployment", function () {
 
     it("Should successfully call revoke Supply delete supplier from the list\n\n", async function () {
 
-      const supplier_4 = new ethers.Wallet("0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356", ethers.provider);
       const managerContractWithSigner = await managerContract.connect(supplier_4);
-
       const supplyAmount = ethers.utils.parseEther("0.15");
 
       const tx = await managerContractWithSigner.supplyProject(profileId, supplyAmount, { value: supplyAmount });
@@ -210,9 +207,7 @@ describe("Contract Deployment", function () {
 
     it("Should successfully Supply by last Supplier and return POOL's number\n\n", async function () {
 
-      const supplier_5 = new ethers.Wallet("0xa267530f49f8280200edf313ee7af6b827f2a8bce2897751d06a843f644967b1", ethers.provider);
       const supplyAmount = ethers.utils.parseEther("0.25");
-
       const managerContractWithSigner = await managerContract.connect(supplier_5);
 
       const tx = await managerContractWithSigner.supplyProject(profileId, supplyAmount, {value: supplyAmount, gasLimit: 3000000});
@@ -224,7 +219,7 @@ describe("Contract Deployment", function () {
     });
   })
 
-  describe(colors.white("= DESCRIBE ================== Milestones Offer Functionality =================="), function () {
+  describe(colors.white("=== DESCRIBE ================== Milestones Offer Functionality =================="), function () {
 
     it("Should successfully call offerMilestones() and return milestones data", async function () {
 
@@ -270,10 +265,8 @@ describe("Contract Deployment", function () {
       );
 
       const setMilestonesTxResult = await setMilestonesTx.wait();
-
       // console.log("---- Offer Milestones Tx Result");
       // console.log(setMilestonesTxResult.events);
-
 
       const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getOffeeredMilestones(
         testRecipientAddress,
@@ -321,22 +314,6 @@ describe("Contract Deployment", function () {
   describe(colors.white("= DESCRIBE ================== Milestones Submissions Functionality =================="), function () {
 
     it("Should successfully get test recipient and show its data ", async function () {
-    
-      // OLD LOGIC! .... Currently, the funds are being allocated by the strategy in the _setMilestones function/method.
-      // At the moment this block is only to see recipient data
-
-      // const tx = await managerContract.allocateFundsToRecipient(
-      //   poolId,
-      //   testRecipientAddress,
-      //   2,
-      //   ethers.utils.parseEther("1"),
-      //   { gasLimit: 3000000}
-      // );
-
-      // const txAllocate = await tx.wait();
-
-      // console.log("---- txAllocate")
-      // console.log(txAllocate)
 
       const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
       const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
@@ -346,7 +323,6 @@ describe("Contract Deployment", function () {
     
       console.log("---- Get Recipient data after Allocation")
       console.log(getRecipientAfterAllocation)
-    
     });
 
     it("Should successfully call submitMilestone() and emit MilestoneSubmitted event", async function () {
@@ -384,9 +360,7 @@ describe("Contract Deployment", function () {
 
     it("Should successfully call reviewSubmitedMilestone() by all suppliers and distribut accepted milestone", async function () {
 
-
       const testRecipientAddressBalanceBefore = await ethers.provider.getBalance(testRecipientAddress);
-
       console.log(colors.white(`testRecipient Address Balance Before Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceBefore)} ETH`));
 
       const milestoneReviewingaccounts = [supplier_1, supplier_2, supplier_3];
@@ -410,7 +384,6 @@ describe("Contract Deployment", function () {
       }
 
       const testRecipientAddressBalanceAfter = await ethers.provider.getBalance(testRecipientAddress);
-
       console.log(colors.white(`testRecipient Address Balance After Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceAfter)} ETH`));
     })
   });
@@ -422,11 +395,9 @@ describe("Contract Deployment", function () {
       const projetcRejectingAccounts = [supplier_1, supplier_2, supplier_3];
 
       console.log(colors.white("\n\n====> SUPPLIERS BALANCE BEFORE REJECTING"))
-
       for (const account of projetcRejectingAccounts) {
 
         const supplierBalanceBefore = await ethers.provider.getBalance(account.address);
-
         console.log(colors.yellow(`supplier Balance: ${ethers.utils.formatEther(supplierBalanceBefore)} ETH`));
       }
 
@@ -447,11 +418,9 @@ describe("Contract Deployment", function () {
       }
 
       console.log(colors.white("\n\n====> SUPPLIERS BALANCE AFTER REJECTING"))
-
       for (const account of projetcRejectingAccounts) {
 
         const supplierBalanceBefore = await ethers.provider.getBalance(account.address);
-
         console.log(colors.yellow(`supplier Balance: ${ethers.utils.formatEther(supplierBalanceBefore)} ETH`));
       }
     })
