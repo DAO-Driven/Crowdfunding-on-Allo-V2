@@ -28,6 +28,7 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         uint256 supplierHat;
         uint256 executorHat;
         SupplierPower[] supliersPower;
+        address hatsContractAddress;
     }
 
     struct ProjectSupply {
@@ -57,6 +58,7 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     IStrategyFactory strategyFactory;
     IHats public hatsContract;
     uint256 managerHatID;
+    address hatsContractAddress;
 
     /// ================================
     /// ========== Storage =============
@@ -82,6 +84,7 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         allo = IAllo(alloAddress);
         strategy = _strategy;
         strategyFactory = IStrategyFactory(_strategyFactory);
+        hatsContractAddress = _hatsContractAddress;
         hatsContract = IHats(_hatsContractAddress);
         managerHatID = _managerHatID;
         address registryAddress = address(allo.getRegistry());
@@ -188,7 +191,8 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
             bytes memory encodedInitData = abi.encode(InitializeData({
                 supplierHat: projectHats[_projectId].supplierHat,
                 executorHat: projectHats[_projectId].executorHat,
-                supliersPower: validSupliers
+                supliersPower: validSupliers,
+                hatsContractAddress: hatsContractAddress
             }));
 
             projectStrategy[_projectId] = strategyFactory.createStrategy(strategy);

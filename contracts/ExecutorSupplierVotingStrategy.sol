@@ -12,6 +12,7 @@ import {IRegistry} from "./interfaces/IRegistry.sol";
 import {BaseStrategy} from "./BaseStrategy.sol";
 // Internal Libraries
 import {Metadata} from "./libraries/Metadata.sol";
+import {IHats} from "./interfaces/Hats/IHats.sol";
 
 
 
@@ -63,6 +64,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         uint256 supplierHat;
         uint256 executorHat;
         SupplierPower[] validSupliers;
+        address hatsContractAddress;
     }
 
     struct OfferedMilestones {
@@ -112,6 +114,10 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     error INVALID_STATUS();
 
+    error EXECUTOR_HAT_WEARING_REQUIRED();
+
+    error SUPPLIER_HAT_WEARING_REQUIRED();
+
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -154,6 +160,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     /// @notice The total amount allocated to grant/recipient.
     uint256 public allocatedGrantAmount;
+
+    IHats public hatsContract;
 
     /// @notice Internal collection of accepted recipients able to submit milestones
     address[] private _acceptedRecipientIds;
@@ -211,6 +219,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         supplierHat = _initData.supplierHat;
         executorHat = _initData.executorHat;
         thresholdPercentage = 70;
+        hatsContract = IHats(_initData.hatsContractAddress);
 
         SupplierPower[] memory supliersPower =  _initData.validSupliers;
 
@@ -236,12 +245,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @return Recipient Returns the recipient
     function getRecipient(address _recipientId) external view returns (Recipient memory) {
         return _getRecipient(_recipientId);
-    }
-
-    function setThresholdPercentage(uint256 _newPercentage, bytes32 _profileId) external {
-        require(_registry.isOwnerOfProfile(_profileId, msg.sender), "UNAUTHORIZED");
-        require(_newPercentage <= 100, "Invalid percentage");
-        thresholdPercentage = _newPercentage;
     }
 
     /// @notice Get the status of the milestone of an recipient.
@@ -300,9 +303,19 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// ======= External/Custom =======
     /// ===============================
 
+    function setThresholdPercentage(uint256 _newPercentage, bytes32 _profileId) external {
+        require(_registry.isOwnerOfProfile(_profileId, msg.sender), "UNAUTHORIZED");
+        require(_newPercentage > 0, "Percentage must be greater than zero");
+        require(_newPercentage <= 100, "Invalid percentage");
+        thresholdPercentage = _newPercentage;
+    }
 
     function offerMilestones(address _recipientId, Milestone[] memory _milestones) external {
-        // Ensure the caller is authorized (either the recipient creator or profile member)
+
+        if (!hatsContract.isWearerOfHat( msg.sender, executorHat)){
+            revert EXECUTOR_HAT_WEARING_REQUIRED();
+        }
+
         bool isRecipientCreator = (msg.sender == _recipientId) || _isProfileMember(_recipientId, msg.sender);
         if (!isRecipientCreator) {
             revert UNAUTHORIZED();
@@ -340,6 +353,10 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     function reviewOfferedtMilestones(address _recipientId, Status _status) external onlyPoolManager(msg.sender) {
         
+        if (!hatsContract.isWearerOfHat( msg.sender, supplierHat)){
+            revert SUPPLIER_HAT_WEARING_REQUIRED();
+        }
+
         if (offeredMilestones[_recipientId].suppliersVotes[msg.sender] > 0){
             revert ALREADY_REVIEWED();
         }
@@ -387,9 +404,12 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @param _recipientId ID of the recipient
     /// @param _metadata The proof of work
     function submitMilestone(address _recipientId, uint256 _milestoneId, Metadata calldata _metadata) external {
+        
+        if (!hatsContract.isWearerOfHat( msg.sender, executorHat)){
+            revert EXECUTOR_HAT_WEARING_REQUIRED();
+        }
+        
         // Check if the '_recipientId' is the same as 'msg.sender' and if it is NOT, revert. This
-        // also checks if the '_recipientId' is a member of the 'Profile' and if it is NOT, revert.
-
         if (_recipientId != msg.sender) {
             revert UNAUTHORIZED();
         }
@@ -424,6 +444,10 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     }
 
     function reviewSubmitedMilestone(address _recipientId, uint256 _milestoneId, Status _status) external onlyPoolManager(msg.sender){
+
+        if (!hatsContract.isWearerOfHat( msg.sender, supplierHat)){
+            revert SUPPLIER_HAT_WEARING_REQUIRED();
+        }
 
         if (submittedvMilestones[_milestoneId].suppliersVotes[msg.sender] > 0){
             revert ALREADY_REVIEWED();
@@ -488,10 +512,13 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     function rejetProject(Status _status) external onlyPoolManager(msg.sender){ 
 
+        if (!hatsContract.isWearerOfHat( msg.sender, supplierHat)){
+            revert SUPPLIER_HAT_WEARING_REQUIRED();
+        }
+
         if (_status != Status.Accepted && _status != Status.Rejected) {
             revert INVALID_STATUS();
         }
-
 
         if (projectReject.suppliersVotes[msg.sender] > 0){
             revert ALREADY_REVIEWED();
@@ -552,7 +579,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             _transferAmount(pool.token, _suppliersStore[i], amount);
         }
     }
-
 
     /// @notice Checks if address is eligible allocator.
     /// @dev This is used to check if the allocator is a pool manager and able to allocate funds from the pool
