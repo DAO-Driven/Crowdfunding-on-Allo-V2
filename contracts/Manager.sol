@@ -47,6 +47,11 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         uint256 supplierPowerr;
     }
 
+    struct Hats {
+        uint256 executorHat;
+        uint256 supplierHat;
+    }
+
     IRegistry registry;
     IAllo allo;
     address strategy;
@@ -65,6 +70,7 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     mapping(bytes32 => address) projectExecutor;
     mapping(bytes32 => uint256) projectPool;
     mapping(bytes32 => address) projectStrategy;
+    mapping(bytes32 => Hats) projectHats;
 
     /// ===============================
     /// ========== Events =============
@@ -153,7 +159,6 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         if (pojectSupply[_projectId].has >= pojectSupply[_projectId].need){
 
             SupplierPower[] memory validSupliers = _extractSupliers(_projectId);
-
             address[] memory managers = new address[](validSupliers.length + 1);
 
             for (uint i = 0; i < validSupliers.length; i++) {
@@ -162,41 +167,32 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
             managers[validSupliers.length] = address(this);
 
-            // uint256 supplierHat = _createAndMintHat(
-            //     "SUPPLIER_HAT", 
-            //     managers, 
-            //     "ipfs://bafkreiey2a5jtqvjl4ehk3jx7fh7edsjqmql6vqxdh47znsleetug44umy/"
-            // );
+            _createAndMintHat(
+                "SUPPLIER_HAT", 
+                managers, 
+                "ipfs://bafkreiey2a5jtqvjl4ehk3jx7fh7edsjqmql6vqxdh47znsleetug44umy/",
+                _projectId,
+                true
+            );
 
-            // console.log("=====> SUPPLIER_HAT ID:", supplierHat);
+            address[] memory executorAddresses = new address[](1);
+            executorAddresses[0] = projectExecutor[_projectId];
 
-            // address[] memory executorAddresses = new address[](1);
-            // executorAddresses[0] = projectExecutor[_projectId];
+            _createAndMintHat(
+                "EXECUTOR_HAT", 
+                executorAddresses, 
+                "ipfs://bafkreih7hjg4ehf4lqdoqstlkjxvjy7zfnza4keh2knohsle3ikjja3g2i/",
+                _projectId,
+                false
+            );
 
-            // uint256 executorHat = _createAndMintHat(
-            //     "EXECUTOR_HAT", 
-            //     executorAddresses, 
-            //     "ipfs://bafkreih7hjg4ehf4lqdoqstlkjxvjy7zfnza4keh2knohsle3ikjja3g2i/"
-            // );
-
-            // console.log("=====> EXECUTOR_HAT ID:", executorHat);
-
-            
-
-            Metadata memory metadata = Metadata({
-                protocol: 1,
-                pointer: "manager webpage link"
-            });
-
-            InitializeData memory initData = InitializeData({
+            bytes memory encodedInitData = abi.encode(InitializeData({
                 registryGating: false,
                 metadataRequired: false,
                 grantAmountRequired: false,
                 supliersPower: validSupliers
-            });
+            }));
 
-            bytes memory encodedInitData = abi.encode(initData);
-            uint256 grantAmount = pojectSupply[_projectId].need;
             projectStrategy[_projectId] = strategyFactory.createStrategy(strategy);
 
             uint256 pool = allo.createPoolWithCustomStrategy{value: msg.value}(
@@ -205,7 +201,10 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
                 encodedInitData,
                 NATIVE,
                 0,
-                metadata,
+                Metadata({
+                    protocol: 1,
+                    pointer: "manager webpage link"
+                }),
                 managers
             );
 
@@ -216,8 +215,11 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
             bytes memory encodedRecipientParams = abi.encode(
                 projectExecutor[_projectId],
                 0x0000000000000000000000000000000000000000,
-                grantAmount,
-                metadata
+                pojectSupply[_projectId].need,
+                Metadata({
+                    protocol: 1,
+                    pointer: "manager webpage link"
+                })
             );
 
             allo.registerRecipient(pool, encodedRecipientParams);
@@ -227,9 +229,9 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         }
     }
 
-    function _createAndMintHat(string memory _hatName, address[] memory _hatWearers, string memory _imageURI) private returns (uint256) {
+    function _createAndMintHat(string memory _hatName, address[] memory _hatWearers, string memory _imageURI, bytes32 _projectId, bool _isSupplier) private {
 
-        uint256 supplierHat = hatsContract.createHat(
+        uint256 hat = hatsContract.createHat(
             managerHatID, 
             _hatName, 
             uint32(_hatWearers.length), 
@@ -239,18 +241,24 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
             _imageURI
         );
 
-        console.log("=====> NEW", _hatName, " : " , supplierHat);
+        // console.log("=====> NEW", _hatName, " : " , hat);
 
         for (uint i = 0; i < _hatWearers.length; i++){
-            hatsContract.mintHat(supplierHat, _hatWearers[i]);
+            hatsContract.mintHat(hat, _hatWearers[i]);
         }
 
-        for (uint i = 0; i < _hatWearers.length; i++){
-            bool isWearer = hatsContract.isWearerOfHat(_hatWearers[i], supplierHat);
-            console.log("===> Supplier:", address(_hatWearers[i]), "-Is wearer of SUPPLIER_HAT:", isWearer);
-        }
+        // for (uint i = 0; i < _hatWearers.length; i++){
+        //     bool isWearer = hatsContract.isWearerOfHat(_hatWearers[i], hat);
+        //     console.log(_hatName);
+        //     console.log("===> Address:", address(_hatWearers[i]), "-Is wearer ", isWearer);
+        // }
 
-        return supplierHat; 
+        if (_isSupplier){
+            projectHats[_projectId].supplierHat = hat;
+        }
+        else {
+            projectHats[_projectId].executorHat = hat;
+        }
     }
     
 
