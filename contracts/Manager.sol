@@ -25,9 +25,8 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     }
 
     struct InitializeData {
-        bool registryGating;
-        bool metadataRequired;
-        bool grantAmountRequired;
+        uint256 supplierHat;
+        uint256 executorHat;
         SupplierPower[] supliersPower;
     }
 
@@ -187,9 +186,8 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
             );
 
             bytes memory encodedInitData = abi.encode(InitializeData({
-                registryGating: false,
-                metadataRequired: false,
-                grantAmountRequired: false,
+                supplierHat: projectHats[_projectId].supplierHat,
+                executorHat: projectHats[_projectId].executorHat,
                 supliersPower: validSupliers
             }));
 
@@ -228,39 +226,6 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
             emit ProjectPoolCreeated( _projectId, pool);
         }
     }
-
-    function _createAndMintHat(string memory _hatName, address[] memory _hatWearers, string memory _imageURI, bytes32 _projectId, bool _isSupplier) private {
-
-        uint256 hat = hatsContract.createHat(
-            managerHatID, 
-            _hatName, 
-            uint32(_hatWearers.length), 
-            address(this), 
-            address(this), 
-            true, 
-            _imageURI
-        );
-
-        // console.log("=====> NEW", _hatName, " : " , hat);
-
-        for (uint i = 0; i < _hatWearers.length; i++){
-            hatsContract.mintHat(hat, _hatWearers[i]);
-        }
-
-        // for (uint i = 0; i < _hatWearers.length; i++){
-        //     bool isWearer = hatsContract.isWearerOfHat(_hatWearers[i], hat);
-        //     console.log(_hatName);
-        //     console.log("===> Address:", address(_hatWearers[i]), "-Is wearer ", isWearer);
-        // }
-
-        if (_isSupplier){
-            projectHats[_projectId].supplierHat = hat;
-        }
-        else {
-            projectHats[_projectId].executorHat = hat;
-        }
-    }
-    
 
     function revokeProjectSupply(bytes32 _projectId) external nonReentrant {
         require(_projectExists(_projectId), "Project does not exist");
@@ -309,6 +274,38 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     function _projectExists(bytes32 _profileId) private view returns (bool) {
         IRegistry.Profile memory profile = registry.getProfileById(_profileId);
         return profile.owner != address(0);
+    }
+
+    function _createAndMintHat(
+        string memory _hatName, 
+        address[] memory _hatWearers, 
+        string memory _imageURI, 
+        bytes32 _projectId, 
+        bool _isSupplier
+    ) 
+        private 
+    {
+
+        uint256 hat = hatsContract.createHat(
+            managerHatID, 
+            _hatName, 
+            uint32(_hatWearers.length), 
+            address(this), 
+            address(this), 
+            true, 
+            _imageURI
+        );
+
+        for (uint i = 0; i < _hatWearers.length; i++){
+            hatsContract.mintHat(hat, _hatWearers[i]);
+        }
+
+        if (_isSupplier){
+            projectHats[_projectId].supplierHat = hat;
+        }
+        else {
+            projectHats[_projectId].executorHat = hat;
+        }
     }
     
     /// @notice This contract should be able to receive native token

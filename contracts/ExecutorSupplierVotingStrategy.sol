@@ -60,9 +60,8 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
     // @notice Struct to hold the init params for the strategy
     struct InitializeData {
-        bool registryGating;
-        bool metadataRequired;
-        bool grantAmountRequired;
+        uint256 supplierHat;
+        uint256 executorHat;
         SupplierPower[] validSupliers;
     }
 
@@ -141,14 +140,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// ========== Storage =============
     /// ================================
 
-    /// @notice Flag to check if registry gating is enabled.
-    bool public registryGating;
+    /// @notice Holds Supplier's Hat ID.
+    uint256 public supplierHat;
 
-    /// @notice Flag to check if metadata is required.
-    bool public metadataRequired;
-
-    /// @notice Flag to check if grant amount is required.
-    bool public grantAmountRequired;
+    /// @notice Holds Executor's Hat ID.
+    uint256 public executorHat;
 
     uint256 public totalSupply;
     uint256 public thresholdPercentage;
@@ -196,7 +192,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Initialize the strategy
     /// @param _poolId ID of the pool
     /// @param _data The data to be decoded
-    /// @custom:data (bool registryGating, bool metadataRequired, bool grantAmountRequired)
+    /// @custom:data (uint256 supplierHat, uint256 executorHat)
     function initialize(uint256 _poolId, bytes memory _data) external virtual override {
         (InitializeData memory initData) = abi.decode(_data, (InitializeData));
         _ExecutorSupplierVotingStrategy_init(_poolId, initData);
@@ -206,15 +202,14 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice This initializes the BaseStrategy
     /// @dev You only need to pass the 'poolId' to initialize the BaseStrategy and the rest is specific to the strategy
     /// @param _poolId ID of the pool - required to initialize the BaseStrategy
-    /// @param _initData The init params for the strategy (bool registryGating, bool metadataRequired, bool grantAmountRequired)
+    /// @param _initData The init params for the strategy (uint256 supplierHat, uint256 executorHat)
     function _ExecutorSupplierVotingStrategy_init(uint256 _poolId, InitializeData memory _initData) internal {
         // Initialize the BaseStrategy
         __BaseStrategy_init(_poolId);
 
         // Set the strategy specific variables
-        registryGating = _initData.registryGating;
-        metadataRequired = _initData.metadataRequired;
-        grantAmountRequired = _initData.grantAmountRequired;
+        supplierHat = _initData.supplierHat;
+        executorHat = _initData.executorHat;
         thresholdPercentage = 70;
 
         SupplierPower[] memory supliersPower =  _initData.validSupliers;
@@ -554,8 +549,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             uint256 amount = poolAmount * percentage / 1e18;
             IAllo.Pool memory pool = allo.getPool(poolId);
 
-            console.log("======> Sending:", amount, "-To:", _suppliersStore[i]);
-
             _transferAmount(pool.token, _suppliersStore[i], amount);
         }
     }
@@ -581,8 +574,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
     /// @notice Register a recipient to the pool.
     /// @dev Emits a 'Registered()' event
     /// @param _data The data to be decoded
-    /// @custom:data when 'registryGating' is 'true' -> (address recipientId, address recipientAddress, uint256 grantAmount, Metadata metadata)
-    ///              when 'registryGating' is 'false' -> (address recipientAddress, address registryAnchor, uint256 grantAmount, Metadata metadata)
+    /// @custom:data (address recipientAddress, address registryAnchor, uint256 grantAmount, Metadata metadata)
     /// @param _sender The sender of the transaction
     /// @return recipientId The id of the recipient
     function _registerRecipient(bytes memory _data, address _sender)
@@ -597,35 +589,18 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         uint256 grantAmount;
         Metadata memory metadata;
 
-        // Decode '_data' depending on the 'registryGating' flag
-        /// @custom:data when 'true' -> (address recipientId, address recipientAddress, uint256 grantAmount, Metadata metadata)
-        if (registryGating) {
-            (recipientId, recipientAddress, grantAmount, metadata) =
-                abi.decode(_data, (address, address, uint256, Metadata));
+        /// @custom:data (address recipientAddress, address registryAnchor, uint256 grantAmount, Metadata metadata)
 
-            if (!_isProfileMember(recipientId, _sender)) {
-                revert UNAUTHORIZED();
-            }
-        } else {
+        (recipientAddress, registryAnchor, grantAmount, metadata) =
+            abi.decode(_data, (address, address, uint256, Metadata));
 
-            /// @custom:data when 'false' -> (address recipientAddress, address registryAnchor, uint256 grantAmount, Metadata metadata)
+        // Check if the registry anchor is valid so we know whether to use it or not
+        isUsingRegistryAnchor = registryAnchor != address(0);
 
-            (recipientAddress, registryAnchor, grantAmount, metadata) =
-                abi.decode(_data, (address, address, uint256, Metadata));
-
-            // Check if the registry anchor is valid so we know whether to use it or not
-            isUsingRegistryAnchor = registryAnchor != address(0);
-
-            // Ternerary to set the recipient id based on whether or not we are using the 'registryAnchor' or 'recipientAddress'
-            recipientId = isUsingRegistryAnchor ? registryAnchor : recipientAddress;
-            if (isUsingRegistryAnchor && !_isProfileMember(recipientId, _sender)) {
-                revert UNAUTHORIZED();
-            }
-        }
-
-        // Check if the grant amount is required and if it is, check if it is greater than 0, otherwise revert
-        if (grantAmountRequired && grantAmount == 0) {
-            revert INVALID_REGISTRATION();
+        // Ternerary to set the recipient id based on whether or not we are using the 'registryAnchor' or 'recipientAddress'
+        recipientId = isUsingRegistryAnchor ? registryAnchor : recipientAddress;
+        if (isUsingRegistryAnchor && !_isProfileMember(recipientId, _sender)) {
+            revert UNAUTHORIZED();
         }
 
         // Check if the recipient is not already accepted, otherwise revert
@@ -633,15 +608,10 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             revert RECIPIENT_ALREADY_ACCEPTED();
         }
 
-        // Check if the metadata is required and if it is, check if it is valid, otherwise revert
-        if (metadataRequired && (bytes(metadata.pointer).length == 0 || metadata.protocol == 0)) {
-            revert INVALID_METADATA();
-        }
-
         // Create the recipient instance
         Recipient memory recipient = Recipient({
             recipientAddress: recipientAddress,
-            useRegistryAnchor: registryGating ? true : isUsingRegistryAnchor,
+            useRegistryAnchor: isUsingRegistryAnchor,
             grantAmount: grantAmount,
             metadata: metadata,
             recipientStatus: Status.Accepted,
