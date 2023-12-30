@@ -386,44 +386,113 @@ describe("Contract Deployment", function () {
       const testRecipientAddressBalanceAfter = await ethers.provider.getBalance(testRecipientAddress);
       console.log(colors.white(`testRecipient Address Balance After Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceAfter)} ETH`));
     })
-  });
 
-  describe(colors.white("= DESCRIBE ================== PROJECT REJECTING =================="), function () {
+    it("Should successfully call submit LAST Milestone", async function () {
 
-    it("Should successfully rejet Project by voting of suppliers", async function () {
+      const wallet = new ethers.Wallet(testRecipientPrivateKey, ethers.provider);
+  
+      const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+      const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+      const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(wallet);
+  
+      const metadata = {
+        protocol: 1,
+        pointer: ""
+      };
+  
+      const submitMilestonesTx = await executorSupplierVotingStrategyWithSigner.submitMilestone(
+        testRecipientAddress,
+        1,
+        metadata,
+        { gasLimit: 3000000}
+      );
+  
+      const submitMilestonesTxResult = await submitMilestonesTx.wait();
+      // console.log(colors.white("---- submitMilestones Tx Result"));
+      // console.log(submitMilestonesTxResult.events);
+  
+      const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getMilestones(
+        testRecipientAddress,
+        { gasLimit: 3000000}
+      );
+  
+      console.log(colors.white("=======> testRecipient's milestones:"));
+      console.log(getMilestonesTx);
+    });
 
-      const projetcRejectingAccounts = [supplier_1, supplier_2, supplier_3];
+    it("Should successfully call review LAST Submited Milestone by all suppliers and distribut accepted milestone", async function () {
 
-      console.log(colors.white("\n\n====> SUPPLIERS BALANCE BEFORE REJECTING"))
-      for (const account of projetcRejectingAccounts) {
+      const testRecipientAddressBalanceBefore = await ethers.provider.getBalance(testRecipientAddress);
+      console.log(colors.white(`testRecipient Address Balance Before Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceBefore)} ETH`));
 
-        const supplierBalanceBefore = await ethers.provider.getBalance(account.address);
-        console.log(colors.yellow(`supplier Balance: ${ethers.utils.formatEther(supplierBalanceBefore)} ETH`));
-      }
-
-      for (const account of projetcRejectingAccounts) {
+      const milestoneReviewingaccounts = [supplier_1, supplier_2, supplier_3];
+  
+      for (const account of milestoneReviewingaccounts) {
 
         const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
         const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
         const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(account);
 
-        const tx = await executorSupplierVotingStrategyWithSigner.rejectProject(
+        const tx = await executorSupplierVotingStrategyWithSigner.reviewSubmitedMilestone(
+          testRecipientAddress, 
+          1,
           2, 
           { gasLimit: 3000000}
         );
 
-        const rejectProjectTxResult = await tx.wait();
-        // console.log(colors.white("----> Reject ProjectTxResult Tx Result"));
-        // console.log(rejectProjectTxResult);
+        const reviewMilestoneTxResult = await tx.wait();
+        // console.log(colors.white("----> review Milestone Tx Result"));
+        // console.log(reviewMilestoneTxResult.events);
       }
 
-      console.log(colors.white("\n\n====> SUPPLIERS BALANCE AFTER REJECTING"))
-      for (const account of projetcRejectingAccounts) {
-
-        const supplierBalanceBefore = await ethers.provider.getBalance(account.address);
-        console.log(colors.yellow(`supplier Balance: ${ethers.utils.formatEther(supplierBalanceBefore)} ETH`));
-      }
+      const testRecipientAddressBalanceAfter = await ethers.provider.getBalance(testRecipientAddress);
+      console.log(colors.white(`testRecipient Address Balance After Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceAfter)} ETH`));
     })
   });
+
+
+
+
+
+
+
+
+  // describe(colors.white("= DESCRIBE ================== PROJECT REJECTING =================="), function () {
+
+  //   it("Should successfully rejet Project by voting of suppliers", async function () {
+
+  //     const projetcRejectingAccounts = [supplier_1, supplier_2, supplier_3];
+
+  //     console.log(colors.white("\n\n====> SUPPLIERS BALANCE BEFORE REJECTING"))
+  //     for (const account of projetcRejectingAccounts) {
+
+  //       const supplierBalanceBefore = await ethers.provider.getBalance(account.address);
+  //       console.log(colors.yellow(`supplier Balance: ${ethers.utils.formatEther(supplierBalanceBefore)} ETH`));
+  //     }
+
+  //     for (const account of projetcRejectingAccounts) {
+
+  //       const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+  //       const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+  //       const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(account);
+
+  //       const tx = await executorSupplierVotingStrategyWithSigner.rejectProject(
+  //         2, 
+  //         { gasLimit: 3000000}
+  //       );
+
+  //       const rejectProjectTxResult = await tx.wait();
+  //       // console.log(colors.white("----> Reject ProjectTxResult Tx Result"));
+  //       // console.log(rejectProjectTxResult);
+  //     }
+
+  //     console.log(colors.white("\n\n====> SUPPLIERS BALANCE AFTER REJECTING"))
+  //     for (const account of projetcRejectingAccounts) {
+
+  //       const supplierBalanceBefore = await ethers.provider.getBalance(account.address);
+  //       console.log(colors.yellow(`supplier Balance: ${ethers.utils.formatEther(supplierBalanceBefore)} ETH`));
+  //     }
+  //   })
+  // });
 
 });  

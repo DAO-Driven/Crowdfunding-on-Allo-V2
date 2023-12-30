@@ -378,6 +378,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         return projectReject.votesAgainst;
     }
 
+   
+    function getSupplierHatID() external view returns (uint256) {
+        return projectReject.votesAgainst;
+    }
+
 
     /// ===============================
     /// ======= External/Custom =======
@@ -483,7 +488,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         emit MilestonesReviewed(_recipientId, _status);
     }
 
-
     /// @notice Submits a milestone for a specific recipient.
     /// @dev Requires that the sender is wearing the executor hat and is the same as `_recipientId`.
     ///      The recipient must be in an 'Accepted' status, and the milestone must be the upcoming one and not already accepted.
@@ -521,6 +525,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         if (milestone.milestoneStatus == Status.Accepted) {
             revert MILESTONE_ALREADY_ACCEPTED();
         }
+
+        for (uint i = 0; i < _suppliersStore.length; i++) {
+            submittedvMilestones[_milestoneId].suppliersVotes[_suppliersStore[i]] = 0;
+        }
+        delete submittedvMilestones[_milestoneId];
 
         // Update the milestone metadata and status
         milestone.metadata = _metadata;
@@ -846,7 +855,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         // Increment the upcoming milestone
         upcomingMilestone[_recipientId]++;
 
-        if (upcomingMilestone[_recipientId] > recipientMilestones.length) {
+        if (upcomingMilestone[_recipientId] >= recipientMilestones.length) {
             state = StrategyState.Executed;
             _setPoolActive(false);
         }
