@@ -61,6 +61,9 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     /// @notice Reverts if the project is already fully funded and does not require additional supply.
     error PROJECT_IS_FUNDED();
 
+    /// @notice Reverts if the amount is greater than the project needed amount.
+    error AMOUNT_MORE_THAN_NEEDED();
+
     /// @notice Interface to interact with the Registry contract.
     IRegistry registry;
 
@@ -218,6 +221,11 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         members[0] = _recipient;
         members[1] = address(this);
 
+
+        pojectSupply[profileId].need += allo.getPercentFee();
+
+        console.log("=====> Initial NEEDED:", pojectSupply[profileId].need);
+
         profileId = registry.createProfile(_nonce, _name, _metadata, address(this), members);
         profiles.push(profileId);
         pojectSupply[profileId].need += _needs;
@@ -246,7 +254,11 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     */
     function supplyProject(bytes32 _projectId, uint256 _amount) external payable nonReentrant {
 
+        if ((pojectSupply[_projectId].has + _amount) > pojectSupply[_projectId].need){
+            revert AMOUNT_MORE_THAN_NEEDED();
+        }
         require(_projectExists(_projectId), "Project does not exist");
+
         if (_amount == 0 || _amount != msg.value) revert NOT_ENOUGH_FUNDS();
 
         if (projectPool[_projectId] != 0) revert PROJECT_IS_FUNDED();

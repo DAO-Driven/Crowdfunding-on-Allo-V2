@@ -276,6 +276,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
         for (uint i = 0; i < supliersPower.length; i++) {
             _suppliersStore.push(supliersPower[i].supplierId);
+
             _suplierPower[supliersPower[i].supplierId] = supliersPower[i].supplierPowerr;
             totalSupply += supliersPower[i].supplierPowerr;
         }
@@ -378,9 +379,11 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         return projectReject.votesAgainst;
     }
 
-   
-    function getSupplierHatID() external view returns (uint256) {
-        return projectReject.votesAgainst;
+   /// @notice Retrieves the number of votes cast by the calling supplier regarding the rejection of the project.
+    /// @dev This function returns the vote count specific to the supplier who calls it, identified by msg.sender.
+    /// @return uint256 The number of votes cast by the calling supplier on the project rejection proposal.
+    function getRejectProjectSupplierVotes() external view returns (uint256) {
+        return projectReject.suppliersVotes[msg.sender];
     }
 
 
@@ -628,14 +631,18 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
         uint256 managerVotingPower = _suplierPower[msg.sender];
         uint256 threshold = totalSupply * thresholdPercentage / 100;
+        projectReject.suppliersVotes[msg.sender] = managerVotingPower;
 
         if (_status == Status.Accepted) {
             projectReject.votesFor += managerVotingPower;
 
             if (projectReject.votesFor > threshold) { 
-                _setPoolActive(false);
+ 
                 _distributeFundsBackToSuppliers();
+
                 state = StrategyState.Rejected;
+                _setPoolActive(false);
+
                 emit ProjectRejected();
             }
         } else if (_status == Status.Rejected) {
@@ -673,6 +680,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
             uint256 percentage = _suplierPower[_suppliersStore[i]];
             uint256 amount = poolAmount * percentage / 1e18;
             IAllo.Pool memory pool = allo.getPool(poolId);
+
             _transferAmount(pool.token, _suppliersStore[i], amount);
         }
     }
