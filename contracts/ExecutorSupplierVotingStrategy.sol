@@ -386,7 +386,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         return projectReject.suppliersVotes[msg.sender];
     }
 
-
     /// ===============================
     /// ======= External/Custom =======
     /// ===============================
