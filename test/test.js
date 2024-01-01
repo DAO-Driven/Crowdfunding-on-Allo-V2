@@ -219,34 +219,311 @@ describe("Contract Deployment", function () {
     });
   })
 
-  describe(colors.white("= DESCRIBE ================== PROJECT REJECTING =================="), function () {
+  // describe(colors.white("= DESCRIBE ================== PROJECT REJECTING =================="), function () {
 
-    it("Should successfully rejet Project by voting of suppliers", async function () {
+  //   it("Should successfully rejet Project by voting of suppliers", async function () {
+
+  //     const projetcRejectingAccounts = [supplier_1, supplier_2, supplier_3];
+
+  //     console.log(colors.white("\n\n====> SUPPLIERS BALANCE BEFORE REJECTING"))
+  //     for (const account of projetcRejectingAccounts) {
+
+  //       const supplierBalanceBefore = await ethers.provider.getBalance(account.address);
+  //       console.log(colors.yellow(`supplier Balance: ${ethers.utils.formatEther(supplierBalanceBefore)} ETH`));
+  //     }
+
+  //     for (const account of projetcRejectingAccounts) {
+
+  //       const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+  //       const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+  //       const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(account);
+
+  //       const tx = await executorSupplierVotingStrategyWithSigner.rejectProject(
+  //         2, 
+  //         { gasLimit: 3000000}
+  //       );
+
+  //       const rejectProjectTxResult = await tx.wait();
+  //       // console.log(colors.white("----> Reject ProjectTxResult Tx Result"));
+  //       // console.log(rejectProjectTxResult);
+  //     }
+
+  //     console.log(colors.white("\n\n====> SUPPLIERS BALANCE AFTER REJECTING"))
+  //     for (const account of projetcRejectingAccounts) {
+
+  //       const supplierBalanceBefore = await ethers.provider.getBalance(account.address);
+  //       console.log(colors.yellow(`supplier Balance: ${ethers.utils.formatEther(supplierBalanceBefore)} ETH`));
+  //     }
+  //   })
+  // });
+
+
+  describe(colors.white("=== DESCRIBE ================== Milestones Offer Functionality =================="), function () {
+
+    it("Should successfully call offerMilestones() and return milestones data", async function () {
+
+      // Import the account using its private key
+      const privateKey = testRecipientPrivateKey;
+      const wallet = new ethers.Wallet(privateKey, ethers.provider);
+      const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+
+      expect(ethers.utils.isAddress(clonedStrategyAddress)).to.be.true;
+
+      const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+      const executorSupplierVotingStrategyWithSigner = await ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(wallet);
+
+      console.log(colors.white(`Connected to cloned strategy at address: ${clonedStrategyAddress}`));
+
+      // Define the metadata structure as per your contract requirements
+      const metadata = {
+        protocol: 1,
+        pointer: ""
+      };
+
+      // Define milestones array
+      const milestones = [
+        {
+          amountPercentage: ethers.utils.parseUnits("0.5", "ether"), 
+          metadata: metadata,
+          milestoneStatus: 0,
+          description: "i will do my best"
+        },
+        {
+          amountPercentage: ethers.utils.parseUnits("0.5", "ether"), 
+          metadata: metadata,
+          milestoneStatus: 0,
+          description: "i will do my best"
+        }
+      ];
+
+      // Call the function with the specified account and milestones array
+      const setMilestonesTx = await executorSupplierVotingStrategyWithSigner.offerMilestones(
+        testRecipientAddress,
+        milestones,
+        { gasLimit: 3000000}
+      );
+
+      const setMilestonesTxResult = await setMilestonesTx.wait();
+      // console.log("---- Offer Milestones Tx Result");
+      // console.log(setMilestonesTxResult.events);
+
+      const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getOffeeredMilestones(
+        testRecipientAddress,
+        { gasLimit: 3000000}
+      );
+
+      console.log(colors.white("---- GET Offered Milestones"));
+      console.log(getMilestonesTx);
+    });
+
+    it("Should successfully call reviewOfferedtMilestones() and return milestones data", async function () {  
+  
+      const milestonesReviewingaccounts = [supplier_1, supplier_2, supplier_3];
+      const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+
+      for (const account of milestonesReviewingaccounts) {
+
+        const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+        const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(account);
+  
+        const tx = await executorSupplierVotingStrategyWithSigner.reviewOfferedtMilestones(
+          testRecipientAddress, 
+          2, 
+          { gasLimit: 3000000}
+        );
+
+        const reviewMilestoneTxResult = await tx.wait();
+        // console.log(colors.white("----> review Milestone Tx Result"));
+        // console.log(reviewMilestoneTxResult);
+      }
+
+      const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+      const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(supplier_1);
+
+      const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getMilestones(
+        testRecipientAddress,
+        { gasLimit: 3000000}
+      );
+
+      console.log(colors.white("---- GET Recipient Milestones"));
+      console.log(getMilestonesTx);
+    });
+  });
+
+  describe(colors.white("= DESCRIBE ================== Milestones Submissions Functionality =================="), function () {
+
+    it("Should successfully get test recipient and show its data ", async function () {
+
+      const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+      const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+      const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(supplier_1);
+
+      const getRecipientAfterAllocation = await executorSupplierVotingStrategyWithSigner.getRecipient(testRecipientAddress);
+    
+      console.log("---- Get Recipient data after Allocation")
+      console.log(getRecipientAfterAllocation)
+    });
+
+    it("Should successfully call submitMilestone() and emit MilestoneSubmitted event", async function () {
+
+      const wallet = new ethers.Wallet(testRecipientPrivateKey, ethers.provider);
+
+      const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+      const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+      const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(wallet);
+
+      const metadata = {
+        protocol: 1,
+        pointer: ""
+      };
+
+      const submitMilestonesTx = await executorSupplierVotingStrategyWithSigner.submitMilestone(
+        testRecipientAddress,
+        0,
+        metadata,
+        { gasLimit: 3000000}
+      );
+
+      const submitMilestonesTxResult = await submitMilestonesTx.wait();
+      // console.log(colors.white("---- submitMilestones Tx Result"));
+      // console.log(submitMilestonesTxResult.events);
+
+      const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getMilestones(
+        testRecipientAddress,
+        { gasLimit: 3000000}
+      );
+
+      console.log(colors.white("=======> testRecipient's milestones:"));
+      console.log(getMilestonesTx);
+    });
+
+    it("Should successfully call reviewSubmitedMilestone() by all suppliers and distribut accepted milestone", async function () {
+
+      const testRecipientAddressBalanceBefore = await ethers.provider.getBalance(testRecipientAddress);
+      console.log(colors.white(`testRecipient Address Balance Before Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceBefore)} ETH`));
+
+      const milestoneReviewingaccounts = [supplier_1, supplier_2, supplier_3];
+  
+      for (const account of milestoneReviewingaccounts) {
+
+        const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+        const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+        const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(account);
+
+        const tx = await executorSupplierVotingStrategyWithSigner.reviewSubmitedMilestone(
+          testRecipientAddress, 
+          0,
+          2, 
+          { gasLimit: 3000000}
+        );
+
+        const reviewMilestoneTxResult = await tx.wait();
+        // console.log(colors.white("----> review Milestone Tx Result"));
+        // console.log(reviewMilestoneTxResult.events);
+      }
+
+      const testRecipientAddressBalanceAfter = await ethers.provider.getBalance(testRecipientAddress);
+      console.log(colors.white(`testRecipient Address Balance After Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceAfter)} ETH`));
+    })
+
+    it("Should successfully call submit LAST Milestone", async function () {
+
+      const wallet = new ethers.Wallet(testRecipientPrivateKey, ethers.provider);
+  
+      const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+      const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+      const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(wallet);
+  
+      const metadata = {
+        protocol: 1,
+        pointer: ""
+      };
+  
+      const submitMilestonesTx = await executorSupplierVotingStrategyWithSigner.submitMilestone(
+        testRecipientAddress,
+        1,
+        metadata,
+        { gasLimit: 3000000}
+      );
+  
+      const submitMilestonesTxResult = await submitMilestonesTx.wait();
+      // console.log(colors.white("---- submitMilestones Tx Result"));
+      // console.log(submitMilestonesTxResult.events);
+  
+      const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getMilestones(
+        testRecipientAddress,
+        { gasLimit: 3000000}
+      );
+  
+      console.log(colors.white("=======> testRecipient's milestones:"));
+      console.log(getMilestonesTx);
+    });
+
+    it("Should successfully call review LAST Submited Milestone by all suppliers and distribut accepted milestone", async function () {
+
+      const testRecipientAddressBalanceBefore = await ethers.provider.getBalance(testRecipientAddress);
+      console.log(colors.white(`testRecipient Address Balance Before Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceBefore)} ETH`));
+
+      const milestoneReviewingaccounts = [supplier_1, supplier_2, supplier_3];
+  
+      for (const account of milestoneReviewingaccounts) {
+
+        const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+        const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+        const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(account);
+
+        const tx = await executorSupplierVotingStrategyWithSigner.reviewSubmitedMilestone(
+          testRecipientAddress, 
+          1,
+          2, 
+          { gasLimit: 3000000}
+        );
+
+        const reviewMilestoneTxResult = await tx.wait();
+        // console.log(colors.white("----> review Milestone Tx Result"));
+        // console.log(reviewMilestoneTxResult.events);
+      }
+
+      const testRecipientAddressBalanceAfter = await ethers.provider.getBalance(testRecipientAddress);
+      console.log(colors.white(`testRecipient Address Balance After Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceAfter)} ETH`));
+    })
+  });
+
+
+  describe(colors.white(" DESCRIBE ================== SEND TOKENS OF THANKS =================="), function () {
+
+    it("Should successfully call sendTokenOfThanksToSuppliers and distribute the tokens between the suppliers", async function () {
+
 
       const projetcRejectingAccounts = [supplier_1, supplier_2, supplier_3];
 
-      console.log(colors.white("\n\n====> SUPPLIERS BALANCE BEFORE REJECTING"))
+      console.log(colors.white("\n\n====> SUPPLIERS BALANCES BEFORE"))
       for (const account of projetcRejectingAccounts) {
 
         const supplierBalanceBefore = await ethers.provider.getBalance(account.address);
         console.log(colors.yellow(`supplier Balance: ${ethers.utils.formatEther(supplierBalanceBefore)} ETH`));
       }
 
-      for (const account of projetcRejectingAccounts) {
+      const privateKey = testRecipientPrivateKey;
+      const wallet = new ethers.Wallet(privateKey, ethers.provider);
 
-        const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
-        const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
-        const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(account);
+      const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
+      const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
+      const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(wallet);
 
-        const tx = await executorSupplierVotingStrategyWithSigner.rejectProject(
-          2, 
-          { gasLimit: 3000000}
-        );
 
-        const rejectProjectTxResult = await tx.wait();
-        // console.log(colors.white("----> Reject ProjectTxResult Tx Result"));
-        // console.log(rejectProjectTxResult);
-      }
+      const supplyAmount = ethers.utils.parseEther("0.25");
+
+      const sendThankstoSuppliersTx = await executorSupplierVotingStrategyWithSigner.sendTokenOfThanksToSuppliers(
+        supplyAmount,
+        {value: supplyAmount, gasLimit: 3000000}
+      );
+
+      const result = await sendThankstoSuppliersTx.wait();
+
+      // console.log(colors.white("\n\n====> sendTokenOfThanksToSuppliers RESULT"))
+      // console.log(result)
+
 
       console.log(colors.white("\n\n====> SUPPLIERS BALANCE AFTER REJECTING"))
       for (const account of projetcRejectingAccounts) {
@@ -254,239 +531,7 @@ describe("Contract Deployment", function () {
         const supplierBalanceBefore = await ethers.provider.getBalance(account.address);
         console.log(colors.yellow(`supplier Balance: ${ethers.utils.formatEther(supplierBalanceBefore)} ETH`));
       }
+
     })
-  });
-
-
-  // describe(colors.white("=== DESCRIBE ================== Milestones Offer Functionality =================="), function () {
-
-  //   it("Should successfully call offerMilestones() and return milestones data", async function () {
-
-  //     // Import the account using its private key
-  //     const privateKey = testRecipientPrivateKey;
-  //     const wallet = new ethers.Wallet(privateKey, ethers.provider);
-  //     const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
-
-  //     expect(ethers.utils.isAddress(clonedStrategyAddress)).to.be.true;
-
-  //     const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
-  //     const executorSupplierVotingStrategyWithSigner = await ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(wallet);
-
-  //     console.log(colors.white(`Connected to cloned strategy at address: ${clonedStrategyAddress}`));
-
-  //     // Define the metadata structure as per your contract requirements
-  //     const metadata = {
-  //       protocol: 1,
-  //       pointer: ""
-  //     };
-
-  //     // Define milestones array
-  //     const milestones = [
-  //       {
-  //         amountPercentage: ethers.utils.parseUnits("0.5", "ether"), 
-  //         metadata: metadata,
-  //         milestoneStatus: 0,
-  //         description: "i will do my best"
-  //       },
-  //       {
-  //         amountPercentage: ethers.utils.parseUnits("0.5", "ether"), 
-  //         metadata: metadata,
-  //         milestoneStatus: 0,
-  //         description: "i will do my best"
-  //       }
-  //     ];
-
-  //     // Call the function with the specified account and milestones array
-  //     const setMilestonesTx = await executorSupplierVotingStrategyWithSigner.offerMilestones(
-  //       testRecipientAddress,
-  //       milestones,
-  //       { gasLimit: 3000000}
-  //     );
-
-  //     const setMilestonesTxResult = await setMilestonesTx.wait();
-  //     // console.log("---- Offer Milestones Tx Result");
-  //     // console.log(setMilestonesTxResult.events);
-
-  //     const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getOffeeredMilestones(
-  //       testRecipientAddress,
-  //       { gasLimit: 3000000}
-  //     );
-
-  //     console.log(colors.white("---- GET Offered Milestones"));
-  //     console.log(getMilestonesTx);
-  //   });
-
-  //   it("Should successfully call reviewOfferedtMilestones() and return milestones data", async function () {  
-  
-  //     const milestonesReviewingaccounts = [supplier_1, supplier_2, supplier_3];
-  //     const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
-
-  //     for (const account of milestonesReviewingaccounts) {
-
-  //       const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
-  //       const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(account);
-  
-  //       const tx = await executorSupplierVotingStrategyWithSigner.reviewOfferedtMilestones(
-  //         testRecipientAddress, 
-  //         2, 
-  //         { gasLimit: 3000000}
-  //       );
-
-  //       const reviewMilestoneTxResult = await tx.wait();
-  //       // console.log(colors.white("----> review Milestone Tx Result"));
-  //       // console.log(reviewMilestoneTxResult);
-  //     }
-
-  //     const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
-  //     const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(supplier_1);
-
-  //     const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getMilestones(
-  //       testRecipientAddress,
-  //       { gasLimit: 3000000}
-  //     );
-
-  //     console.log(colors.white("---- GET Recipient Milestones"));
-  //     console.log(getMilestonesTx);
-  //   });
-  // });
-
-  // describe(colors.white("= DESCRIBE ================== Milestones Submissions Functionality =================="), function () {
-
-  //   it("Should successfully get test recipient and show its data ", async function () {
-
-  //     const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
-  //     const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
-  //     const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(supplier_1);
-
-  //     const getRecipientAfterAllocation = await executorSupplierVotingStrategyWithSigner.getRecipient(testRecipientAddress);
-    
-  //     console.log("---- Get Recipient data after Allocation")
-  //     console.log(getRecipientAfterAllocation)
-  //   });
-
-  //   it("Should successfully call submitMilestone() and emit MilestoneSubmitted event", async function () {
-
-  //     const wallet = new ethers.Wallet(testRecipientPrivateKey, ethers.provider);
-
-  //     const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
-  //     const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
-  //     const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(wallet);
-
-  //     const metadata = {
-  //       protocol: 1,
-  //       pointer: ""
-  //     };
-
-  //     const submitMilestonesTx = await executorSupplierVotingStrategyWithSigner.submitMilestone(
-  //       testRecipientAddress,
-  //       0,
-  //       metadata,
-  //       { gasLimit: 3000000}
-  //     );
-
-  //     const submitMilestonesTxResult = await submitMilestonesTx.wait();
-  //     // console.log(colors.white("---- submitMilestones Tx Result"));
-  //     // console.log(submitMilestonesTxResult.events);
-
-  //     const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getMilestones(
-  //       testRecipientAddress,
-  //       { gasLimit: 3000000}
-  //     );
-
-  //     console.log(colors.white("=======> testRecipient's milestones:"));
-  //     console.log(getMilestonesTx);
-  //   });
-
-  //   it("Should successfully call reviewSubmitedMilestone() by all suppliers and distribut accepted milestone", async function () {
-
-  //     const testRecipientAddressBalanceBefore = await ethers.provider.getBalance(testRecipientAddress);
-  //     console.log(colors.white(`testRecipient Address Balance Before Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceBefore)} ETH`));
-
-  //     const milestoneReviewingaccounts = [supplier_1, supplier_2, supplier_3];
-  
-  //     for (const account of milestoneReviewingaccounts) {
-
-  //       const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
-  //       const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
-  //       const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(account);
-
-  //       const tx = await executorSupplierVotingStrategyWithSigner.reviewSubmitedMilestone(
-  //         testRecipientAddress, 
-  //         0,
-  //         2, 
-  //         { gasLimit: 3000000}
-  //       );
-
-  //       const reviewMilestoneTxResult = await tx.wait();
-  //       // console.log(colors.white("----> review Milestone Tx Result"));
-  //       // console.log(reviewMilestoneTxResult.events);
-  //     }
-
-  //     const testRecipientAddressBalanceAfter = await ethers.provider.getBalance(testRecipientAddress);
-  //     console.log(colors.white(`testRecipient Address Balance After Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceAfter)} ETH`));
-  //   })
-
-  //   it("Should successfully call submit LAST Milestone", async function () {
-
-  //     const wallet = new ethers.Wallet(testRecipientPrivateKey, ethers.provider);
-  
-  //     const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
-  //     const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
-  //     const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(wallet);
-  
-  //     const metadata = {
-  //       protocol: 1,
-  //       pointer: ""
-  //     };
-  
-  //     const submitMilestonesTx = await executorSupplierVotingStrategyWithSigner.submitMilestone(
-  //       testRecipientAddress,
-  //       1,
-  //       metadata,
-  //       { gasLimit: 3000000}
-  //     );
-  
-  //     const submitMilestonesTxResult = await submitMilestonesTx.wait();
-  //     // console.log(colors.white("---- submitMilestones Tx Result"));
-  //     // console.log(submitMilestonesTxResult.events);
-  
-  //     const getMilestonesTx = await executorSupplierVotingStrategyWithSigner.getMilestones(
-  //       testRecipientAddress,
-  //       { gasLimit: 3000000}
-  //     );
-  
-  //     console.log(colors.white("=======> testRecipient's milestones:"));
-  //     console.log(getMilestonesTx);
-  //   });
-
-  //   it("Should successfully call review LAST Submited Milestone by all suppliers and distribut accepted milestone", async function () {
-
-  //     const testRecipientAddressBalanceBefore = await ethers.provider.getBalance(testRecipientAddress);
-  //     console.log(colors.white(`testRecipient Address Balance Before Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceBefore)} ETH`));
-
-  //     const milestoneReviewingaccounts = [supplier_1, supplier_2, supplier_3];
-  
-  //     for (const account of milestoneReviewingaccounts) {
-
-  //       const clonedStrategyAddress = await managerContract.getProjectStrategy(profileId);
-  //       const ExecutorSupplierVotingStrategy = await ethers.getContractFactory("ExecutorSupplierVotingStrategy");
-  //       const executorSupplierVotingStrategyWithSigner = ExecutorSupplierVotingStrategy.attach(clonedStrategyAddress).connect(account);
-
-  //       const tx = await executorSupplierVotingStrategyWithSigner.reviewSubmitedMilestone(
-  //         testRecipientAddress, 
-  //         1,
-  //         2, 
-  //         { gasLimit: 3000000}
-  //       );
-
-  //       const reviewMilestoneTxResult = await tx.wait();
-  //       // console.log(colors.white("----> review Milestone Tx Result"));
-  //       // console.log(reviewMilestoneTxResult.events);
-  //     }
-
-  //     const testRecipientAddressBalanceAfter = await ethers.provider.getBalance(testRecipientAddress);
-  //     console.log(colors.white(`testRecipient Address Balance After Distribute is ${ethers.utils.formatEther(testRecipientAddressBalanceAfter)} ETH`));
-  //   })
-  // });
-
+  })
 });  
