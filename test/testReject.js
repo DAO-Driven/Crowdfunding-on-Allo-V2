@@ -116,7 +116,7 @@ describe("Contract Deployment", function () {
 
 
       const tx = await managerContract.registerProject(
-        ethers.utils.parseEther("1"),
+        ethers.utils.parseEther("0.5"),
         77777777, 
         "Dev Profile 1", 
         [1, "test pointer"], 
@@ -137,7 +137,7 @@ describe("Contract Deployment", function () {
 
     it("Should successfully call supplyProject and fund Project\n\n", async function () {
 
-      const supplyAmount = ethers.utils.parseEther("0.5");
+      const supplyAmount = ethers.utils.parseEther("0.25");
 
       for (const account of accounts) {
         // Connect the managerContract to the current account (signer)

@@ -280,12 +280,19 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
 
         SupplierPower[] memory supliersPower =  _initData.projectSuppliers;
 
+        uint256 totalInvestment = 0;
+        for (uint i = 0; i < supliersPower.length; i++) {
+            totalInvestment += supliersPower[i].supplierPowerr;
+        }
+
         for (uint i = 0; i < supliersPower.length; i++) {
             _suppliersStore.push(supliersPower[i].supplierId);
 
-            _suplierPower[supliersPower[i].supplierId] = supliersPower[i].supplierPowerr;
-            totalSupply += supliersPower[i].supplierPowerr;
+            // Normalize supplier power to a percentage
+            _suplierPower[supliersPower[i].supplierId] = (supliersPower[i].supplierPowerr * 1e18) / totalInvestment;
+            totalSupply += _suplierPower[supliersPower[i].supplierId];
         }
+
 
         _registry = allo.getRegistry();
 
