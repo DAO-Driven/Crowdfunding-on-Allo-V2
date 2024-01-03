@@ -1,5 +1,8 @@
-require("@nomiclabs/hardhat-waffle");
 
+require("@nomiclabs/hardhat-waffle");
+require('dotenv').config();
+
+const GOERLI_PRIVATE_KEY = process.env.TOP_HAT_PRIVATE_KEY;
 
 module.exports = {
   networks: {
@@ -7,10 +10,10 @@ module.exports = {
       forking: {
         url: "https://eth-goerli.g.alchemy.com/v2/k6px3XV2CMs2pZjXklvjGc8A0i-SujVf",
       },
-      // loggingEnabled: true 
     },
     goerli: {
       url: "https://eth-goerli.g.alchemy.com/v2/k6px3XV2CMs2pZjXklvjGc8A0i-SujVf",
+      accounts: [`0x${GOERLI_PRIVATE_KEY}`]
     },
   },
   solidity: {
@@ -18,8 +21,9 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200 
+        runs: 200
       }
     }
   }
 };
+

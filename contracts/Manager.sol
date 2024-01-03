@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "./interfaces/IRegistry.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "solady/src/auth/Ownable.sol";
 import {Errors} from "./libraries/Errors.sol";
 import {Transfer} from "./libraries/Transfer.sol";
 import "./libraries/Native.sol";
@@ -12,7 +13,7 @@ import {IHats} from "./interfaces/Hats/IHats.sol";
 import "hardhat/console.sol";
 
 
-contract Manager is ReentrancyGuard, Errors, Transfer{
+contract Manager is ReentrancyGuard, Transfer, Ownable {
 
     /// @notice Enum representing various statuses a project or milestone can have.
     enum Status {
@@ -66,6 +67,9 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
 
     /// @notice Reverts if an executor attempts to supply, which is not permitted.
     error EXECUTOR_IS_NOT_ALLOWED_TO_SUPPLY();
+
+    /// @notice Thrown when not enough funds are available
+    error NOT_ENOUGH_FUNDS();
 
     /// @notice Interface to interact with the Registry contract.
     IRegistry registry;
@@ -200,6 +204,52 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
     /// @return address The address of the strategy associated with the specified project.
     function getProjectStrategy(bytes32 _projectId) public view returns (address) {
         return projectStrategy[_projectId];
+    }
+
+    /**
+     * @notice Retrieves the supply details of a specific project.
+     * @param _projectId The ID of the project for which to get the supply details.
+     * @return ProjectSupply A struct containing the project's supply details, including total need and amount supplied.
+    */
+    function getProjectSupply(bytes32 _projectId) public view returns (ProjectSupply memory) {
+        return pojectSupply[_projectId];
+    }
+
+
+    /// @notice Sets a new Allo contract address
+    /// @dev Only callable by the contract owner
+    /// @param newAlloAddress The address of the new Allo contract
+    function setAlloAddress(address newAlloAddress) external onlyOwner {
+        allo = IAllo(newAlloAddress);
+    }
+
+    /// @notice Sets a new Strategy contract address
+    /// @dev Only callable by the contract owner
+    /// @param newStrategy The address of the new Strategy contract
+    function setStrategyAddress(address newStrategy) external onlyOwner {
+        strategy = newStrategy;
+    }
+
+    /// @notice Sets a new Strategy Factory contract address
+    /// @dev Only callable by the contract owner
+    /// @param newStrategyFactory The address of the new Strategy Factory contract
+    function setStrategyFactoryAddress(address newStrategyFactory) external onlyOwner {
+        strategyFactory = IStrategyFactory(newStrategyFactory);
+    }
+
+    /// @notice Sets a new Hats contract address
+    /// @dev Only callable by the contract owner
+    /// @param newHatsContractAddress The address of the new Hats contract
+    function setHatsContractAddress(address newHatsContractAddress) external onlyOwner {
+        hatsContractAddress = newHatsContractAddress;
+        hatsContract = IHats(newHatsContractAddress);
+    }
+
+    /// @notice Sets a new Manager Hat ID
+    /// @dev Only callable by the contract owner
+    /// @param newManagerHatID The new Manager Hat ID
+    function setManagerHatID(uint256 newManagerHatID) external onlyOwner {
+        managerHatID = newManagerHatID;
     }
 
     /// @notice Registers a new project and creates its profile.
@@ -375,15 +425,6 @@ contract Manager is ReentrancyGuard, Errors, Transfer{
         projectSuppliers[_projectId] = updatedSuppliers;
 
         _transferAmount(NATIVE, msg.sender, amount);
-    }
-
-    /**
-     * @notice Retrieves the supply details of a specific project.
-     * @param _projectId The ID of the project for which to get the supply details.
-     * @return ProjectSupply A struct containing the project's supply details, including total need and amount supplied.
-    */
-    function getProjectSupply(bytes32 _projectId) public view returns (ProjectSupply memory) {
-        return pojectSupply[_projectId];
     }
 
     /**

@@ -411,8 +411,8 @@
       ]
     },
     "/Users/green/code/allo-v2-test/contracts/Manager.sol": {
-      "lastModificationDate": 1703973971184,
-      "contentHash": "f98f60a2732b919a63cda26093bb90e4",
+      "lastModificationDate": 1704230701123,
+      "contentHash": "1074962ad5c4d5deb918881c29c65fe4",
       "sourceName": "contracts/Manager.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -441,6 +441,7 @@
       "imports": [
         "./interfaces/IRegistry.sol",
         "@openzeppelin/contracts/utils/ReentrancyGuard.sol",
+        "solady/src/auth/Ownable.sol",
         "./libraries/Errors.sol",
         "./libraries/Transfer.sol",
         "./libraries/Native.sol",
@@ -831,6 +832,42 @@
       ],
       "artifacts": [
         "HatsEvents"
+      ]
+    },
+    "/Users/green/code/allo-v2-test/node_modules/solady/src/auth/Ownable.sol": {
+      "lastModificationDate": 1703711826533,
+      "contentHash": "c4dc3df5e9b88f1d361e92da30715f29",
+      "sourceName": "solady/src/auth/Ownable.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.4"
+      ],
+      "artifacts": [
+        "Ownable"
       ]
     }
   }

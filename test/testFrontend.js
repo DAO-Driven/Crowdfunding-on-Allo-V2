@@ -110,10 +110,10 @@ describe("Contract Deployment", function () {
       const tx = await managerContract.registerProject(
         ethers.utils.parseEther("1"),
         77777777, 
-        "Dev Profile 1", 
+        "DAO Governance", 
         [1, "test pointer"], 
         testRecipientAddress,
-        "Test Description"
+        "A concise project synopsis that encapsulates its core concept."
       );
 
       const txReceipt = await tx.wait();
@@ -134,10 +134,10 @@ describe("Contract Deployment", function () {
       const txDevProfile_1 = await managerContract.registerProject(
         ethers.utils.parseEther("1"),
         77779876, 
-        "Dev Profile 2", 
+        "Grants Management", 
         [1, "test pointer"], 
         testRecipientAddress,
-        "Test Description"
+        "A concise project synopsis that encapsulates its core concept."
       );
 
       const txReceiptDevProfile_1 = await txDevProfile_1.wait();
@@ -148,10 +148,10 @@ describe("Contract Deployment", function () {
       const txDevProfile_2 = await managerContract.registerProject(
         ethers.utils.parseEther("1"),
         7765479876, 
-        "Dev Profile 3", 
+        "Local Communities", 
         [1, "test pointer"], 
         testRecipientAddress,
-        "Test Description"
+        "A concise project synopsis that encapsulates its core concept."
       );
 
       const txReceiptDevProfile_2 = await txDevProfile_2.wait();
@@ -162,10 +162,10 @@ describe("Contract Deployment", function () {
       const txDevProfile_3 = await managerContract.registerProject(
         ethers.utils.parseEther("1"),
         7765411111, 
-        "Dev Profile 4", 
+        "DeFi Integrations", 
         [1, "test pointer"], 
         testRecipientAddress,
-        "Test Description"
+        "A concise project synopsis that encapsulates its core concept."
       );
 
       const txReceiptDevProfile_3 = await txDevProfile_3.wait();

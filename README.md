@@ -77,7 +77,7 @@ Join us in revolutionizing the crowdfunding landscape in the Web3 ecosystem with
 
 ## Introduction
 
-This document outlines various scenarios demonstrating the functionality of the Decentralized GrantStream platform, a Web3 crowdfunding ecosystem on the Arbitrum chain. Utilizing the Gitcoin Allo V2 protocol, it facilitates a dynamic interaction between project creators (developers) and investors (suppliers).
+This document outlines various scenarios demonstrating the functionality of the Decentralized GrantStream platform, a Web3 crowdfunding ecosystem. Utilizing the Gitcoin Allo V2 protocol, it facilitates a dynamic interaction between project creators (developers) and investors (suppliers).
 
 ## Scenario Summaries
 
