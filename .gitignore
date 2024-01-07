@@ -3,4 +3,5 @@ artifacts/
 cache/
 test/
 scripts/
+hardhat.config.js
 .env

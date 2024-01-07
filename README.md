@@ -1,4 +1,4 @@
-# Decentralized GrantStream: A DAO-Driven Crowdfunding Platform
+# Decentralized GrantStream: A DAO-Driven Crowdfunding Platform on Allo V2
 
 ## Introduction
 

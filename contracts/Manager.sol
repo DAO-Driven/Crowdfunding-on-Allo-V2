@@ -59,6 +59,10 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
         uint256 supplierHat;          // ID of the Supplier Hat.
     }
 
+    /// ===============================
+    /// ========== Errors =============
+    /// ===============================
+
     /// @notice Reverts if the project is already fully funded and does not require additional supply.
     error PROJECT_IS_FUNDED();
 
@@ -369,7 +373,7 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
                 0,
                 Metadata({
                     protocol: 1,
-                    pointer: "manager webpage link"
+                    pointer: "https://github.com/alexandr-masl/web3-crowdfunding-on-allo-V2/blob/main/contracts/ExecutorSupplierVotingStrategy.sol"
                 }),
                 managers
             );
@@ -404,6 +408,8 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
     */
     function revokeProjectSupply(bytes32 _projectId) external nonReentrant {
         require(_projectExists(_projectId), "Project does not exist");
+        
+        if (projectPool[_projectId] != 0) revert PROJECT_IS_FUNDED();
 
         uint256 amount = projectSuppliersById[_projectId].supplyById[msg.sender];
         require(amount > 0, "SUPPLY NOT FOUND");
