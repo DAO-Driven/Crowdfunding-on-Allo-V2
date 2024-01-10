@@ -32,6 +32,7 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
         uint256 executorHat;          // ID of the Executor Hat.
         SupplierPower[] supliersPower; // Array of SupplierPower, representing the power of each supplier.
         address hatsContractAddress;  // Address of the Hats contract.
+        uint8 thresholdPercentage;
     }
 
     /// @notice Struct representing the supply details of a project.
@@ -95,6 +96,9 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
 
     /// @notice Address of the Hats contract.
     address hatsContractAddress;
+
+    /// @notice Voting Threshold Percentage.
+    uint8 thresholdPercentage;
 
     /// ================================
     /// ========== Storage =============
@@ -164,6 +168,7 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
         managerHatID = _managerHatID;
         address registryAddress = address(allo.getRegistry());
         registry = IRegistry(registryAddress);
+        thresholdPercentage = 70;
     }
 
 
@@ -255,6 +260,16 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
     function setManagerHatID(uint256 newManagerHatID) external onlyOwner {
         managerHatID = newManagerHatID;
     }
+
+    /// @notice Sets the threshold percentage for a specific profile.
+    /// @param _newPercentage The new threshold percentage to be set.
+    /// @dev Requires the sender to be the owner of the profile and the percentage to be between 1 and 100.
+    function setThresholdPercentage(uint8 _newPercentage)  external onlyOwner {
+        require(_newPercentage > 0, "Percentage must be greater than zero");
+        require(_newPercentage <= 100, "Invalid percentage");
+        thresholdPercentage = _newPercentage;
+    }
+
 
     /// @notice Registers a new project and creates its profile.
     /// @dev Creates a new project profile in the registry and initializes its supply details.
@@ -360,7 +375,8 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
                 supplierHat: projectHats[_projectId].supplierHat,
                 executorHat: projectHats[_projectId].executorHat,
                 supliersPower: suppliers,
-                hatsContractAddress: hatsContractAddress
+                hatsContractAddress: hatsContractAddress,
+                thresholdPercentage: thresholdPercentage
             }));
 
             projectStrategy[_projectId] = strategyFactory.createStrategy(strategy);

@@ -73,6 +73,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         uint256 executorHat;          // ID of the Executor Hat.
         SupplierPower[] projectSuppliers; // Array of SupplierPower, representing the power of each supplier.
         address hatsContractAddress;  // Address of the Hats contract.
+        uint8 thresholdPercentage;
     }
 
     /// @notice Struct to represent the offered milestones along with their voting status.
@@ -275,7 +276,7 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         // Set the strategy specific variables
         supplierHat = _initData.supplierHat;
         executorHat = _initData.executorHat;
-        thresholdPercentage = 70;
+        thresholdPercentage = _initData.thresholdPercentage;
         hatsContract = IHats(_initData.hatsContractAddress);
 
         SupplierPower[] memory supliersPower =  _initData.projectSuppliers;
@@ -399,20 +400,16 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         return projectReject.suppliersVotes[msg.sender];
     }
 
+    /// @notice Retrieves the offered milestones for a specific recipient.
+    /// @param _recipientId The ID of the recipient whose milestones are being requested.
+    /// @return Milestone[] An array of milestones offered to the recipient.
+    function getOffeeredMilestones(address _recipientId) external view returns (Milestone[] memory) {
+        return offeredMilestones[_recipientId].milestones;
+    }
+
     /// ===============================
     /// ======= External/Custom =======
     /// ===============================
-
-    /// @notice Sets the threshold percentage for a specific profile.
-    /// @param _newPercentage The new threshold percentage to be set.
-    /// @param _profileId The ID of the profile for which the threshold is being set.
-    /// @dev Requires the sender to be the owner of the profile and the percentage to be between 1 and 100.
-    function setThresholdPercentage(uint256 _newPercentage, bytes32 _profileId) external {
-        require(_registry.isOwnerOfProfile(_profileId, msg.sender), "UNAUTHORIZED");
-        require(_newPercentage > 0, "Percentage must be greater than zero");
-        require(_newPercentage <= 100, "Invalid percentage");
-        thresholdPercentage = _newPercentage;
-    }
 
     /// @notice Offers milestones to a specific recipient.
     /// @param _recipientId The ID of the recipient to whom the milestones are being offered.
@@ -448,13 +445,6 @@ contract ExecutorSupplierVotingStrategy is BaseStrategy, ReentrancyGuard {
         }
 
         emit MilestonesOffered(_recipientId, _milestones.length);
-    }
-
-    /// @notice Retrieves the offered milestones for a specific recipient.
-    /// @param _recipientId The ID of the recipient whose milestones are being requested.
-    /// @return Milestone[] An array of milestones offered to the recipient.
-    function getOffeeredMilestones(address _recipientId) external view returns (Milestone[] memory) {
-        return offeredMilestones[_recipientId].milestones;
     }
 
     /// @notice Reviews the offered milestones for a specific recipient and sets their status.
