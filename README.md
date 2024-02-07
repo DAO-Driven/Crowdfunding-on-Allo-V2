@@ -130,9 +130,12 @@ As we continue to develop and enhance the Decentralized GrantStream platform, we
    A sophisticated system for the delegation and revocability of voting rights, allowing investors to delegate their voting tokens to managers, who can then sub-delegate to others, creating a hierarchical structure. This process is tracked using the Hats protocol and the project's ERC-1155 tokens, establishing a tiered system of delegation where any Hat at a higher level can revoke voting rights from any below it.
 
 4. **Enhanced Strategy Features:**
-   - More complex voting mechanisms, including vote allocation to milestones and implementation of Quadratic Voting, all tracked and weighted by ERC1155 NFTs.
-   - The ability to include sub-tasks by creating a Sub-Strategy without needing new voting tokens or additional financing.
-   - Addition of multiple executors and facilitation of new managers and executors' inclusion through a democratic voting process.
+   - Implementation of more complex voting mechanisms, with vote allocation to milestones as demonstrated in the _qv_allocate function of the QVBaseStrategy contract.
+   - Implementation of voting tracked and weighted by the ERC1155 NFT for all milestone voting procedures.
+   - Implementation of Quadratic Voting tracked and weighted by the ERC1155 NFT for the addition of new Recipients and Manager voting procedures.
+   - Introduction of the ability to include sub-tasks by creating a Sub-Strategy without the need for creating new voting tokens or financing a new project to acquire these rights.
+   - Addition of multiple executors, expanding beyond the current limitation of only a single executor.
+   - Facilitation of new managers and executors' inclusion through a democratic voting process.
 
 5. **Utilization of the Hats Protocol and Guild for Discord Roles:**
    - Establishing a new Discord branch for each strategy to enable efficient discussion and collaboration among participants.
