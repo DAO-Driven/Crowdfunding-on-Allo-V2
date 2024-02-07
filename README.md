@@ -111,3 +111,28 @@ This document outlines various scenarios demonstrating the functionality of the 
 ## Conclusion
 
 These scenarios demonstrate the flexibility and democratic nature of the Decentralized GrantStream platform. It empowers investors to actively participate in project development and ensures accountability from project executors. The platform's design caters to various possible outcomes, from successful project completion to partial success and complete rejection, reflecting real-world investment dynamics in the Web3 ecosystem.
+
+
+## Future Plans for the Project
+
+As we continue to develop and enhance the Decentralized GrantStream platform, we aim to introduce new features and strategies to improve functionality and user engagement:
+
+1. **Implementation of Three Strategy Types:**
+   - **Crowdfunding Strategy:** Designed for executors to actively seek investors.
+   - **Bounty Strategy:** Allows investors to wait for executors to take the initiative.
+   - **Sub-Strategy:** Functions under a parent strategy with predefined investors and executors, maintaining identical voting weights as the parent strategy.
+
+2. **Integration of ERC-1155 Tokens:**
+   - **Voting Token Type:** Minted during each voting round, these tokens facilitate the delegation of voting rights, with a potential sub-delegation process visualized as a linked list and tracked via Hats and ERC-1155 NFTs.
+   - **Reputation Token Type:** Aimed at building user reputation, these non-transferable tokens can be minted or revoked by the management contract, offering benefits like loans for executors with high reputation and additional voting power for reputable investors.
+
+3. **Delegate/Revoke & Sub-Delegate/Revoke Voting Rights:**
+   A sophisticated system for the delegation and revocability of voting rights, allowing investors to delegate their voting tokens to managers, who can then sub-delegate to others, creating a hierarchical structure. This process is tracked using the Hats protocol and the project's ERC-1155 tokens, establishing a tiered system of delegation where any Hat at a higher level can revoke voting rights from any below it.
+
+4. **Enhanced Strategy Features:**
+   - More complex voting mechanisms, including vote allocation to milestones and implementation of Quadratic Voting, all tracked and weighted by ERC1155 NFTs.
+   - The ability to include sub-tasks by creating a Sub-Strategy without needing new voting tokens or additional financing.
+   - Addition of multiple executors and facilitation of new managers and executors' inclusion through a democratic voting process.
+
+5. **Utilization of the Hats Protocol and Guild for Discord Roles:**
+   - Establishing a new Discord branch for each strategy to enable efficient discussion and collaboration among participants.

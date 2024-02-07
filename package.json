@@ -17,6 +17,6 @@
     "dotenv": "^16.3.1",
     "ethereum-waffle": "^3.0.0",
     "ethers": "^5.0.0",
-    "solady": "^0.0.150"
+    "solady": "^0.0.163"
   }
 }

@@ -6937,10 +6937,10 @@ snapdragon@^0.8.1:
     source-map-resolve "^0.5.0"
     use "^3.1.0"
 
-solady@^0.0.150:
-  version "0.0.150"
-  resolved "https://registry.npmjs.org/solady/-/solady-0.0.150.tgz"
-  integrity sha512-X9INNf2hzEm+qDFWk8zjzD4/ZNIdYYuDiI8i2BAc3RO3ICJ/srUnfOCP/RDTpD6BYVChU0Mr3QWGqWtHXfYpMw==
+solady@^0.0.163:
+  version "0.0.163"
+  resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.163.tgz#4d97290113e069bb0ce6a9f8f18305e9e9846044"
+  integrity sha512-VsvCLsDTq2egf2G2hzWOm75TTxOkICi1WS8yTV4sH4G6PXAvtywaEfjAo8F2rfUUGASML5NbKQVMjFGs+v/K6g==
 
 solc@0.7.3:
   version "0.7.3"
