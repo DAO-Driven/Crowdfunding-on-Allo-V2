@@ -136,7 +136,6 @@ As we continue to develop and enhance the Decentralized GrantStream platform, we
    - Implementation of more complex voting mechanisms, with vote allocation to milestones as demonstrated in the _qv_allocate function of the QVBaseStrategy contract.
    - Implementation of voting tracked and weighted by the ERC1155 NFT for all milestone voting procedures.
    - Implementation of Quadratic Voting tracked and weighted by the ERC1155 NFT for the addition of new Recipients and Manager voting procedures.
-   - Introduction of the ability to include sub-tasks by creating a Sub-Strategy without the need for creating new voting tokens or financing a new project to acquire these rights.
    - Addition of multiple executors, expanding beyond the current limitation of only a single executor.
    - Facilitation of new managers and executors' inclusion through a democratic voting process.
 
