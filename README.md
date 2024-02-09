@@ -117,10 +117,13 @@ These scenarios demonstrate the flexibility and democratic nature of the Decentr
 
 As we continue to develop and enhance the Decentralized GrantStream platform, we aim to introduce new features and strategies to improve functionality and user engagement:
 
-1. **Implementation of Three Strategy Types:**
-   - **Crowdfunding Strategy:** Designed for executors to actively seek investors.
-   - **Bounty Strategy:** Allows investors to wait for executors to take the initiative.
-   - **Sub-Strategy:** Functions under a parent strategy with predefined investors and executors, maintaining identical voting weights as the parent strategy.
+1. **Implementation of Three Strategy Use Cases:**
+   - **Crowdfunding:** Designed for executors to actively seek investors.
+   - **Bounty:** Allows investors to wait for executors to take the initiative.
+   - **Agreement:** A strategy with predefined investors and executors.
+
+   All three cases will be covered by a single strategy, initialized with different parameters.
+
 
 2. **Integration of ERC-1155 Tokens:**
    - **Voting Token Type:** Minted during each voting round, these tokens facilitate the delegation of voting rights, with a potential sub-delegation process visualized as a linked list and tracked via Hats and ERC-1155 NFTs.
