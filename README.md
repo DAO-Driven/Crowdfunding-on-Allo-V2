@@ -119,7 +119,7 @@ As we continue to develop and enhance the Decentralized GrantStream platform, we
 
 1. **Implementation of Three Strategy Use Cases:**
    - **Crowdfunding:** Designed for executors to actively seek investors.
-   - **Bounty:** Allows investors to wait for executors to take the initiative.
+   - **Quest:** Allows investors to wait for executors to take the initiative.
    - **Agreement:** A strategy with predefined investors and executors.
 
    All three cases will be covered by a single strategy, initialized with different parameters.
