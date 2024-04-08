@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./interfaces/IRegistry.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "solady/src/auth/Ownable.sol";
-import {Errors} from "./libraries/Errors.sol";
-import {Transfer} from "./libraries/Transfer.sol";
-import "./libraries/Native.sol";
 import {IAllo} from "./interfaces/IAllo.sol";
 import {IStrategyFactory} from "./interfaces/IStrategyFactory.sol";
 import {IHats} from "./interfaces/Hats/IHats.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import "hardhat/console.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "./interfaces/IRegistry.sol";
 
 
-contract Manager is ReentrancyGuard, Transfer, Ownable {
+contract Manager is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     /// @notice Enum representing various statuses a project or milestone can have.
     enum Status {
@@ -38,9 +38,7 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
     /// @notice Struct representing the supply details of a project.
     struct ProjectSupply {
         uint256 need;                 // The total amount needed for the project.
-        uint256 has;                  // The amount currently supplied.
-        string name;                  // Name of the project.
-        string description;           // Description of the project.
+        uint256 has;                  // The amount currently supplied.         // Description of the project.
     }
 
     /// @notice Struct for mapping suppliers to their supply amount by ID.
@@ -100,6 +98,8 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
     /// @notice Voting Threshold Percentage.
     uint8 thresholdPercentage;
 
+    address public constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     /// ================================
     /// ========== Storage =============
     /// ================================
@@ -114,7 +114,7 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
     mapping(bytes32 => SuppliersById) projectSuppliersById;
 
     /// @notice Mapping from project ID to its supply details, including needs and current supply.
-    mapping(bytes32 => ProjectSupply) pojectSupply;
+    mapping(bytes32 => ProjectSupply) projectSupply;
 
     /// @notice Mapping from project ID to the address of its executor.
     mapping(bytes32 => address) projectExecutor;
@@ -127,6 +127,8 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
 
     /// @notice Mapping from project ID to its associated hats (executor and supplier hats).
     mapping(bytes32 => Hats) projectHats;
+
+    bool private initialized;
 
 
     /// ===============================
@@ -143,24 +145,25 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
     /// @param poolId The ID of the newly created pool.
     event ProjectPoolCreeated(bytes32 projectId, uint256 poolId);
 
+    event ProjectRegistered(bytes32 profileId, uint256 nonce);
 
-    /**
-     * @notice Constructor to create a new instance of the contract.
-     * @param alloAddress The address of the Allo contract.
-     * @param _strategy The address of the strategy contract.
-     * @param _strategyFactory The address of the Strategy Factory contract.
-     * @param _hatsContractAddress The address of the Hats contract.
-     * @param _managerHatID The ID of the manager's hat in the Hats contract.
-     * @dev Initializes the contract by setting up references to external contracts and configurations.
-     */
-    constructor(
-        address alloAddress, 
+    event ProjectNeedsUpdated(bytes32 indexed projectId, uint256 newNeeds);
+
+
+    function initialize(
+        address _alloAddress, 
         address _strategy, 
         address _strategyFactory, 
         address _hatsContractAddress, 
         uint256 _managerHatID
-    ) {
-        allo = IAllo(alloAddress);
+    ) public initializer {
+        require(!initialized, "Contract instance has already been initialized");
+        initialized = true;
+
+        __Ownable_init(msg.sender);
+        __ReentrancyGuard_init();
+
+        allo = IAllo(_alloAddress);
         strategy = _strategy;
         strategyFactory = IStrategyFactory(_strategyFactory);
         hatsContractAddress = _hatsContractAddress;
@@ -168,7 +171,7 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
         managerHatID = _managerHatID;
         address registryAddress = address(allo.getRegistry());
         registry = IRegistry(registryAddress);
-        thresholdPercentage = 70;
+        thresholdPercentage = 70; // Default value, adjust as needed
     }
 
 
@@ -221,9 +224,8 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
      * @return ProjectSupply A struct containing the project's supply details, including total need and amount supplied.
     */
     function getProjectSupply(bytes32 _projectId) public view returns (ProjectSupply memory) {
-        return pojectSupply[_projectId];
+        return projectSupply[_projectId];
     }
-
 
     /// @notice Sets a new Allo contract address
     /// @dev Only callable by the contract owner
@@ -270,7 +272,6 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
         thresholdPercentage = _newPercentage;
     }
 
-
     /// @notice Registers a new project and creates its profile.
     /// @dev Creates a new project profile in the registry and initializes its supply details.
     /// @param _needs The total amount needed for the project.
@@ -278,35 +279,49 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
     /// @param _name The name of the project.
     /// @param _metadata Metadata associated with the project.
     /// @param _recipient The address of the project's recipient or executor.
-    /// @param _description A brief description of the project.
-    /// @return profileId The ID of the newly created project profile.
-    function registerProject( 
+    function registerProject(
         uint256 _needs,
         uint256 _nonce,
         string memory _name,
         Metadata memory _metadata,
-        address _recipient,
-        string memory _description
-    ) external returns (bytes32 profileId) {
-
+        address _recipient
+    ) external {
         address[] memory members = new address[](2);
         members[0] = _recipient;
         members[1] = address(this);
-        pojectSupply[profileId].need += allo.getPercentFee();
-        profileId = registry.createProfile(_nonce, _name, _metadata, address(this), members);
-        profiles.push(profileId);
-        pojectSupply[profileId].need += _needs;
-        pojectSupply[profileId].name = _name;
-        pojectSupply[profileId].description = _description;
+
+        bytes32 profileId = registry.createProfile(_nonce, _name, _metadata, address(this), members);
+        projectSupply[profileId].need += allo.getPercentFee() + _needs;
         projectExecutor[profileId] = _recipient;
 
-        return profileId;
+        profiles.push(profileId);
+
+        emit ProjectRegistered(profileId, _nonce);
     }
+
 
     /// @notice Retrieves all registered project profiles.
     /// @return bytes32[] An array of project profile IDs.
     function getProfiles() public view returns (bytes32[] memory){
         return profiles;
+    }
+
+    /**
+     * @notice Updates the funding requirements ('needs') for a specific project.
+     * @dev Requires that the caller is the project executor, the new needs value is greater than the current supply to ensure 
+     *      project requirements are realistic, and that the new needs value accounts for necessary fees.
+     *      This function is intended to adjust the project's funding target based on revised estimates or project scope changes.
+     * @param _projectId The ID of the project for which to update funding requirements.
+     * @param _needs The new funding requirement (needs) value for the project.
+     */
+    function updateProjectNeeds(bytes32 _projectId, uint256 _needs) external {
+        require(projectExecutor[_projectId] == msg.sender, "UNAUTHORIZED: Caller must be project executor.");
+        require(_needs > projectSupply[_projectId].has, "INVALID VALUE: Needs must exceed current supply.");
+        require(_needs > allo.getPercentFee(), "LESS THAN FEE: Needs must be greater than the fee.");
+        
+        projectSupply[_projectId].need = _needs;
+
+        emit ProjectNeedsUpdated(_projectId, _needs);
     }
 
     /**
@@ -320,7 +335,7 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
     */
     function supplyProject(bytes32 _projectId, uint256 _amount) external payable nonReentrant {
 
-        if ((pojectSupply[_projectId].has + _amount) > pojectSupply[_projectId].need){
+        if ((projectSupply[_projectId].has + _amount) > projectSupply[_projectId].need){
             revert AMOUNT_IS_BIGGER_THAN_DECLARED_NEEDEDS();
         }
         require(_projectExists(_projectId), "Project does not exist");
@@ -331,7 +346,7 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
 
         if (projectExecutor[_projectId] == msg.sender) revert EXECUTOR_IS_NOT_ALLOWED_TO_SUPPLY();
 
-        pojectSupply[_projectId].has += _amount;
+        projectSupply[_projectId].has += _amount;
 
         if (projectSuppliersById[_projectId].supplyById[msg.sender] == 0){
             projectSuppliers[_projectId].push(msg.sender);
@@ -341,7 +356,7 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
 
         emit ProjectFunded(_projectId, _amount);
 
-        if (pojectSupply[_projectId].has >= pojectSupply[_projectId].need){
+        if (projectSupply[_projectId].has >= projectSupply[_projectId].need){
 
             SupplierPower[] memory suppliers = _extractSupliers(_projectId);
             address[] memory managers = new address[](suppliers.length + 1);
@@ -353,7 +368,7 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
             managers[suppliers.length] = address(this);
 
             _createAndMintHat(
-                "SUPPLIER_HAT", 
+                "Manager", 
                 managers, 
                 "ipfs://bafkreiey2a5jtqvjl4ehk3jx7fh7edsjqmql6vqxdh47znsleetug44umy/",
                 _projectId,
@@ -364,7 +379,7 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
             executorAddresses[0] = projectExecutor[_projectId];
 
             _createAndMintHat(
-                "EXECUTOR_HAT", 
+                "Recipient", 
                 executorAddresses, 
                 "ipfs://bafkreih7hjg4ehf4lqdoqstlkjxvjy7zfnza4keh2knohsle3ikjja3g2i/",
                 _projectId,
@@ -381,7 +396,7 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
 
             projectStrategy[_projectId] = strategyFactory.createStrategy(strategy);
 
-            uint256 pool = allo.createPoolWithCustomStrategy{value: msg.value}(
+            uint256 pool = allo.createPoolWithCustomStrategy(
                 _projectId,
                 projectStrategy[_projectId],
                 encodedInitData,
@@ -394,14 +409,14 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
                 managers
             );
 
-            require(address(this).balance >= pojectSupply[_projectId].need, "Insufficient balance in contract");
+            require(address(this).balance >= projectSupply[_projectId].need, "Insufficient balance in contract");
 
-            allo.fundPool{value: pojectSupply[_projectId].need}(pool, pojectSupply[_projectId].need);
+            allo.fundPool{value: projectSupply[_projectId].need}(pool, projectSupply[_projectId].need);
 
             bytes memory encodedRecipientParams = abi.encode(
                 projectExecutor[_projectId],
                 0x0000000000000000000000000000000000000000,
-                pojectSupply[_projectId].need,
+                projectSupply[_projectId].need,
                 Metadata({
                     protocol: 1,
                     pointer: "executor"
@@ -432,7 +447,7 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
 
         delete projectSuppliersById[_projectId].supplyById[msg.sender];
 
-        pojectSupply[_projectId].has -= amount;
+        projectSupply[_projectId].has -= amount;
 
         address[] memory updatedSuppliers = new address[](projectSuppliers[_projectId].length - 1);
         uint j = 0;
@@ -520,6 +535,20 @@ contract Manager is ReentrancyGuard, Transfer, Ownable {
             projectHats[_projectId].executorHat = hat;
         }
     }
+
+    /// @notice Transfer an amount of a token to an address
+    /// @param _token The token to transfer
+    /// @param _to The address to transfer to
+    /// @param _amount The amount to transfer
+    function _transferAmount(address _token, address _to, uint256 _amount) internal {
+        if (_token == NATIVE) {
+            SafeTransferLib.safeTransferETH(_to, _amount);
+        } else {
+            SafeTransferLib.safeTransfer(_token, _to, _amount);
+        }
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
     
     /// @notice This contract should be able to receive native token
     receive() external payable {}
